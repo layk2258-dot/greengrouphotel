@@ -3,10 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green Group - Hotel Room Management System</title>
+    <title>Green Group - Hotel Room Management System (Cloud Integrated)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+
+    <!-- Google Firebase SDKs (v10.8.0) -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // 🔑 သင့်ရဲ့ Firebase Console မှ Keys များကို ဒီနေရာမှာ ထည့်သွင်းပါ
+        const firebaseConfig = {
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // Initialize Firebase Global Variables
+        try {
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            window.firebaseDB = db;
+            window.doc = doc;
+            window.setDoc = setDoc;
+            window.getDoc = getDoc;
+            window.onSnapshot = onSnapshot;
+            console.log("Firebase Cloud Storage Connected!");
+        } catch (e) {
+            console.warn("Firebase Config Keys မထည့်ရသေးပါ။ Local Storage အဖြစ်သာ အလုပ်လုပ်ပါမည်။", e);
+        }
+    </script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
         body { font-family: 'Plus Jakarta Sans', 'Padauk', sans-serif; background-color: #f8fafc; }
@@ -22,12 +53,12 @@
                 <div class="bg-white text-emerald-800 p-2 rounded-lg font-bold text-xl shadow">GG</div>
                 <div>
                     <h1 class="font-bold text-lg leading-tight">Green Group Hotel System</h1>
-                    <p class="text-xs text-emerald-200">Capsule & Room Management</p>
+                    <p class="text-xs text-emerald-200">Capsule & Room Management (Cloud Live)</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
                 <span id="saveStatus" class="text-xs bg-emerald-700/60 text-emerald-100 px-2.5 py-1 rounded-md border border-emerald-600/50 flex items-center gap-1">
-                    💾 Auto Saved
+                    ☁️ Cloud Syncing...
                 </span>
                 <button onclick="resetToDefaultData()" class="bg-rose-700 hover:bg-rose-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition" title="Reset Sample Data">
                     🔄 Reset Data
@@ -67,7 +98,7 @@
             </div>
         </div>
 
-        <!-- NEW: Collapsible Toggle Button for Summary View -->
+        <!-- Collapsible Toggle Button for Summary View -->
         <div class="flex justify-between items-center">
             <button onclick="toggleSummaryView()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow transition">
                 <i data-lucide="layout-grid" class="w-4 h-4"></i>
@@ -76,7 +107,7 @@
             </button>
         </div>
 
-        <!-- NEW: Collapsible Bed List Summary View Panel (Hidden by default) -->
+        <!-- Collapsible Bed List Summary View Panel -->
         <div id="summaryViewPanel" class="hidden bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4 transition-all duration-300">
             <div class="flex justify-between items-center border-b pb-3">
                 <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
@@ -86,7 +117,6 @@
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- In House Beds -->
                 <div class="border border-emerald-200 bg-emerald-50/40 rounded-xl p-3 flex flex-col h-56">
                     <div class="flex justify-between items-center mb-2 pb-2 border-b border-emerald-200">
                         <span class="font-bold text-emerald-800 text-xs uppercase flex items-center gap-1">
@@ -96,12 +126,9 @@
                             📝 Note (TXT) ဒေါင်းရန်
                         </button>
                     </div>
-                    <div id="list-inhouse" class="overflow-y-auto flex-1 flex flex-wrap gap-1.5 content-start pr-1">
-                        <!-- Badges rendered here -->
-                    </div>
+                    <div id="list-inhouse" class="overflow-y-auto flex-1 flex flex-wrap gap-1.5 content-start pr-1"></div>
                 </div>
 
-                <!-- Available Beds -->
                 <div class="border border-sky-200 bg-sky-50/40 rounded-xl p-3 flex flex-col h-56">
                     <div class="flex justify-between items-center mb-2 pb-2 border-b border-sky-200">
                         <span class="font-bold text-sky-800 text-xs uppercase flex items-center gap-1">
@@ -111,12 +138,9 @@
                             📝 Note (TXT) ဒေါင်းရန်
                         </button>
                     </div>
-                    <div id="list-available" class="overflow-y-auto flex-1 flex flex-wrap gap-1.5 content-start pr-1">
-                        <!-- Badges rendered here -->
-                    </div>
+                    <div id="list-available" class="overflow-y-auto flex-1 flex flex-wrap gap-1.5 content-start pr-1"></div>
                 </div>
 
-                <!-- Check Out Beds -->
                 <div class="border border-amber-200 bg-amber-50/40 rounded-xl p-3 flex flex-col h-56">
                     <div class="flex justify-between items-center mb-2 pb-2 border-b border-amber-200">
                         <span class="font-bold text-amber-800 text-xs uppercase flex items-center gap-1">
@@ -126,9 +150,7 @@
                             📝 Note (TXT) ဒေါင်းရန်
                         </button>
                     </div>
-                    <div id="list-checkout" class="overflow-y-auto flex-1 flex flex-wrap gap-1.5 content-start pr-1">
-                        <!-- Badges rendered here -->
-                    </div>
+                    <div id="list-checkout" class="overflow-y-auto flex-1 flex flex-wrap gap-1.5 content-start pr-1"></div>
                 </div>
             </div>
         </div>
@@ -190,13 +212,11 @@
             </div>
             
             <div class="p-6 space-y-4 text-sm">
-                <!-- Quick Search Room Box inside Modal -->
                 <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
                     <label class="block font-semibold text-emerald-900 mb-1 text-xs uppercase">🔍 ပြင်ဆင်လိုသည့် Bed No ကို ချက်ချင်းရှာရန်</label>
                     <div class="flex gap-2">
                         <input type="text" id="modalSearchInput" onkeyup="searchBedInModal()" placeholder="ဥပမာ- M3A05, E3B10..." class="w-full px-3 py-1.5 border border-emerald-300 rounded-lg text-sm bg-white focus:outline-emerald-600">
                     </div>
-                    <!-- Search Results Dropdown/List -->
                     <select id="modalSearchResults" onchange="selectBedFromSearch()" class="w-full mt-2 px-2 py-1.5 border border-emerald-300 rounded-lg text-xs bg-white text-slate-700 hidden">
                     </select>
                 </div>
@@ -323,29 +343,72 @@
             return `${day}/${month}/${year}`;
         }
 
-        function loadSavedData() {
+        // ☁️ Save Data to Local Storage AND Firebase Cloud Storage Automatically
+        async function saveDataToStorage() {
+            // 1. Save LocalStorage
+            localStorage.setItem('green_group_rooms_data_v2', JSON.stringify(roomsData));
+            showSaveNotification("💾 Local Saved");
+
+            // 2. Direct Sync to Firebase Cloud Database
+            if (window.firebaseDB && window.setDoc && window.doc) {
+                try {
+                    await window.setDoc(window.doc(window.firebaseDB, "hotel_system", "rooms_data"), {
+                        updatedAt: new Date().toISOString(),
+                        rooms: roomsData
+                    });
+                    showSaveNotification("☁️ Cloud Saved!");
+                } catch (error) {
+                    console.error("Cloud Save Error:", error);
+                    showSaveNotification("⚠️ Cloud Error");
+                }
+            }
+        }
+
+        // ☁️ Realtime Cloud Data Sync & Listener
+        function initCloudSync() {
+            if (window.firebaseDB && window.onSnapshot && window.doc) {
+                const docRef = window.doc(window.firebaseDB, "hotel_system", "rooms_data");
+                window.onSnapshot(docRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        const cloudData = docSnap.data().rooms;
+                        if (cloudData && Array.isArray(cloudData)) {
+                            roomsData = cloudData;
+                            localStorage.setItem('green_group_rooms_data_v2', JSON.stringify(roomsData));
+                            filterData();
+                            showSaveNotification("☁️ Cloud Synced");
+                        }
+                    } else {
+                        // First time initialization on cloud
+                        saveDataToStorage();
+                    }
+                }, (error) => {
+                    console.warn("Cloud Snapshot Listening Failed, fallback to local storage.", error);
+                    loadLocalDataFallback();
+                });
+            } else {
+                loadLocalDataFallback();
+            }
+        }
+
+        function loadLocalDataFallback() {
             const saved = localStorage.getItem('green_group_rooms_data_v2');
             if (saved) {
                 try { roomsData = JSON.parse(saved); } catch(e) { roomsData = [...defaultRoomsData]; }
             } else {
                 roomsData = [...defaultRoomsData];
             }
+            filterData();
         }
 
-        function saveDataToStorage() {
-            localStorage.setItem('green_group_rooms_data_v2', JSON.stringify(roomsData));
-            showSaveNotification();
-        }
-
-        function showSaveNotification() {
+        function showSaveNotification(msg) {
             const statusEl = document.getElementById('saveStatus');
             if (statusEl) {
-                statusEl.innerText = "💾 Saved!";
+                statusEl.innerText = msg;
                 statusEl.classList.add('bg-emerald-500');
                 setTimeout(() => {
-                    statusEl.innerText = "💾 Auto Saved";
+                    statusEl.innerText = "☁️ Auto Saved";
                     statusEl.classList.remove('bg-emerald-500');
-                }, 1000);
+                }, 1500);
             }
         }
 
@@ -357,7 +420,6 @@
             }
         }
 
-        // Toggle Summary View Visibility
         function toggleSummaryView() {
             const panel = document.getElementById('summaryViewPanel');
             const icon = document.getElementById('summaryToggleIcon');
@@ -418,7 +480,6 @@
             document.getElementById('stat-rate').innerText = rate + '%';
         }
 
-        // Render Bed Badges by Status
         function renderStatusLists() {
             const inHouseBeds = roomsData.filter(r => r.status === 'In House');
             const availableBeds = roomsData.filter(r => r.status === 'Available' || !r.status);
@@ -451,7 +512,6 @@
             });
         }
 
-        // Export Status List to TXT Note File
         function downloadBedListNote(statusType) {
             let filtered = [];
             let title = "";
@@ -678,8 +738,10 @@
         }
 
         window.onload = function() {
-            loadSavedData();
-            renderTable();
+            // Cloud Sync ကို စတင်နှိုးဆော်ခြင်း
+            setTimeout(() => {
+                initCloudSync();
+            }, 500);
         };
     </script>
 </body>
