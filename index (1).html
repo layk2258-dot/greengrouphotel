@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green Group - Hotel Room Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        body { font-family: 'Plus Jakarta Sans', 'Padauk', sans-serif; background-color: #f8fafc; }
+        .status-in-house { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .status-check-out { background-color: #f3f4f6; color: #374151; border: 1px solid #e5e7eb; }
+        .status-available { background-color: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+    </style>
+</head>
+<body class="text-slate-800">
+    <header class="bg-emerald-800 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white text-emerald-800 p-2 rounded-lg font-bold text-xl shadow">GG</div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Green Group Hotel System</h1>
+                    <p class="text-xs text-emerald-200">Capsule & Room Management</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="saveStatus" class="text-xs bg-emerald-700/60 text-emerald-100 px-2.5 py-1 rounded-md border border-emerald-600/50 flex items-center gap-1">
+                    💾 Auto Saved
+                </span>
+                <button onclick="resetToDefaultData()" class="bg-rose-700 hover:bg-rose-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition" title="Reset Sample Data">
+                    🔄 Reset Data
+                </button>
+                <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition">
+                    <i data-lucide="download" class="w-4 h-4"></i> Excel (CSV) ဒေါင်းရန်
+                </button>
+                <button onclick="openAddModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-900 font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> အခန်းသစ်ထည့်/ပြင်ရန်
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <!-- Dashboard Stats -->
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                <p class="text-xs font-semibold text-slate-500 uppercase">စုစုပေါင်း Bed/Room</p>
+                <p id="stat-total" class="text-2xl font-bold text-slate-800 mt-1">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-emerald-100 bg-emerald-50/30">
+                <p class="text-xs font-semibold text-emerald-600 uppercase">In House (တည်းခိုနေဆဲ)</p>
+                <p id="stat-in-house" class="text-2xl font-bold text-emerald-700 mt-1">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-sky-100 bg-sky-50/30">
+                <p class="text-xs font-semibold text-sky-600 uppercase">Available (လွတ်နေသော)</p>
+                <p id="stat-available" class="text-2xl font-bold text-sky-700 mt-1">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-amber-100 bg-amber-50/30">
+                <p class="text-xs font-semibold text-amber-600 uppercase">Check Out ပြီး</p>
+                <p id="stat-checkout" class="text-2xl font-bold text-amber-700 mt-1">0</p>
+            </div>
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-indigo-100 bg-indigo-50/30">
+                <p class="text-xs font-semibold text-indigo-600 uppercase">Occupancy Rate</p>
+                <p id="stat-rate" class="text-2xl font-bold text-indigo-700 mt-1">0%</p>
+            </div>
+        </div>
+
+        <!-- NEW: Collapsible Toggle Button for Summary View -->
+        <div class="flex justify-between items-center">
+            <button onclick="toggleSummaryView()" class="bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-4 py-2 rounded-xl text-sm flex items-center gap-2 shadow transition">
+                <i data-lucide="layout-grid" class="w-4 h-4"></i>
+                📊 Bed List Summary View ကြည့်ရန် / ပိတ်ရန်
+                <i id="summaryToggleIcon" data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200"></i>
+            </button>
+        </div>
+
+        <!-- NEW: Collapsible Bed List Summary View Panel (Hidden by default) -->
+        <div id="summaryViewPanel" class="hidden bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-4 transition-all duration-300">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="list-checks" class="w-5 h-5 text-emerald-600"></i> အခန်း/Bed များအလိုက် လက်ရှိအခြေအနေ အကျဉ်းချုပ်
+                </h2>
+                <span class="text-xs text-slate-500">Note အနေဖြင့် သီးသန့် Save ထုတ်ယူနိုင်ပါသည်။</span>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- In House Beds -->
+                <div class="border border-emerald-200 bg-emerald-50/40 rounded-xl p-3 flex flex-col h-56">
+                    <div class="flex justify-between items-center mb-2 pb-2 border-b border-emerald-200">
+                        <span class="font-bold text-emerald-800 text-xs uppercase flex items-center gap-1">
+                            🟢 In House (<span id="count-inhouse-list">0</span>)
+                        </span>
+                        <button onclick="downloadBedListNote('In House')" class="text-[11px] bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-2 py-1 rounded shadow flex items-center gap-1">
+                            📝 Note (TXT) ဒေါင်းရန်
+                        </button>
+                    </div>
+                    <div id="list-inhouse" class="overflow-y-auto flex-1 flex flex-wrap gap-1.5 content-start pr-1">
+                        <!-- Badges rendered here -->
+                    </div>
+                </div>
+
+                <!-- Available Beds -->
+                <div class="border border-sky-200 bg-sky-50/40 rounded-xl p-3 flex flex-col h-56">
+                    <div class="flex justify-between items-center mb-2 pb-2 border-b border-sky-200">
+                        <span class="font-bold text-sky-800 text-xs uppercase flex items-center gap-1">
+                            🔵 Available (<span id="count-available-list">0</span>)
+                        </span>
+                        <button onclick="downloadBedListNote('Available')" class="text-[11px] bg-sky-600 hover:bg-sky-700 text-white font-semibold px-2 py-1 rounded shadow flex items-center gap-1">
+                            📝 Note (TXT) ဒေါင်းရန်
+                        </button>
+                    </div>
+                    <div id="list-available" class="overflow-y-auto flex-1 flex flex-wrap gap-1.5 content-start pr-1">
+                        <!-- Badges rendered here -->
+                    </div>
+                </div>
+
+                <!-- Check Out Beds -->
+                <div class="border border-amber-200 bg-amber-50/40 rounded-xl p-3 flex flex-col h-56">
+                    <div class="flex justify-between items-center mb-2 pb-2 border-b border-amber-200">
+                        <span class="font-bold text-amber-800 text-xs uppercase flex items-center gap-1">
+                            🟠 Check Out (<span id="count-checkout-list">0</span>)
+                        </span>
+                        <button onclick="downloadBedListNote('Check Out')" class="text-[11px] bg-amber-600 hover:bg-amber-700 text-white font-semibold px-2 py-1 rounded shadow flex items-center gap-1">
+                            📝 Note (TXT) ဒေါင်းရန်
+                        </button>
+                    </div>
+                    <div id="list-checkout" class="overflow-y-auto flex-1 flex flex-wrap gap-1.5 content-start pr-1">
+                        <!-- Badges rendered here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-3">
+            <input type="text" id="searchInput" oninput="filterData()" placeholder="Bed No, ဧည့်သည်အမည်, Booking No..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
+            <select id="statusFilter" onchange="filterData()" class="w-full py-2 px-3 border border-slate-300 rounded-lg text-sm">
+                <option value="">Status အားလုံး</option>
+                <option value="In House">In House</option>
+                <option value="Check Out">Check Out</option>
+                <option value="Available">Available</option>
+            </select>
+            <select id="typeFilter" onchange="filterData()" class="w-full py-2 px-3 border border-slate-300 rounded-lg text-sm">
+                <option value="">Bed Type အားလုံး</option>
+                <option value="Female Dorm">Female Dorm</option>
+                <option value="Mix Dorm">Mix Dorm</option>
+            </select>
+            <select id="otaFilter" onchange="filterData()" class="w-full py-2 px-3 border border-slate-300 rounded-lg text-sm">
+                <option value="">OTA အားလုံး</option>
+                <option value="Booking.com">Booking.com</option>
+                <option value="Trip.com">Trip.com</option>
+                <option value="Hostelworld">Hostelworld</option>
+                <option value="Agoda">Agoda</option>
+                <option value="Expedia">Expedia</option>
+            </select>
+        </div>
+
+        <!-- Table Structure -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-100 text-slate-700 font-semibold border-b uppercase text-xs">
+                        <tr>
+                            <th class="py-3 px-4">Bed Number</th>
+                            <th class="py-3 px-4">Building / Floor</th>
+                            <th class="py-3 px-4">Bed Type</th>
+                            <th class="py-3 px-4">Status</th>
+                            <th class="py-3 px-4">Guest Name</th>
+                            <th class="py-3 px-4">Check In Date</th>
+                            <th class="py-3 px-4">Check Out Date</th>
+                            <th class="py-3 px-4">OTA Channel</th>
+                            <th class="py-3 px-4">Booking No</th>
+                            <th class="py-3 px-4 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit/Add Modal Form -->
+    <div id="roomModal" class="fixed inset-0 bg-slate-900/50 hidden flex justify-center items-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
+            <div class="bg-emerald-800 text-white px-6 py-4 flex justify-between items-center">
+                <h3 id="modalTitle" class="font-bold text-lg">အခန်း / Bed ပြင်ဆင်ရန် သို့မဟုတ် ထည့်သွင်းရန်</h3>
+                <button onclick="closeModal()" class="text-white hover:text-slate-200 text-lg">✕</button>
+            </div>
+            
+            <div class="p-6 space-y-4 text-sm">
+                <!-- Quick Search Room Box inside Modal -->
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3">
+                    <label class="block font-semibold text-emerald-900 mb-1 text-xs uppercase">🔍 ပြင်ဆင်လိုသည့် Bed No ကို ချက်ချင်းရှာရန်</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="modalSearchInput" onkeyup="searchBedInModal()" placeholder="ဥပမာ- M3A05, E3B10..." class="w-full px-3 py-1.5 border border-emerald-300 rounded-lg text-sm bg-white focus:outline-emerald-600">
+                    </div>
+                    <!-- Search Results Dropdown/List -->
+                    <select id="modalSearchResults" onchange="selectBedFromSearch()" class="w-full mt-2 px-2 py-1.5 border border-emerald-300 rounded-lg text-xs bg-white text-slate-700 hidden">
+                    </select>
+                </div>
+
+                <form id="roomForm" onsubmit="saveRoom(event)" class="space-y-3">
+                    <input type="hidden" id="editIndex" value="-1">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-semibold mb-1">Bed Number *</label>
+                            <input type="text" id="formBedNo" required class="w-full px-3 py-2 border rounded-lg focus:ring-1 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block font-semibold mb-1">Status</label>
+                            <select id="formStatus" class="w-full px-3 py-2 border rounded-lg">
+                                <option value="In House">In House</option>
+                                <option value="Check Out">Check Out</option>
+                                <option value="Available">Available</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-semibold mb-1">Guest Name</label>
+                        <input type="text" id="formGuestName" class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-semibold mb-1">Check In Date</label>
+                            <input type="date" id="formCheckIn" class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block font-semibold mb-1">Check Out Date</label>
+                            <input type="date" id="formCheckOut" class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block font-semibold mb-1">OTA Channel</label>
+                            <select id="formOTA" class="w-full px-3 py-2 border rounded-lg">
+                                <option value="">- OTA ရွေးချယ်ပါ -</option>
+                                <option value="Booking.com">Booking.com</option>
+                                <option value="Trip.com">Trip.com</option>
+                                <option value="Hostelworld">Hostelworld</option>
+                                <option value="Agoda">Agoda</option>
+                                <option value="Expedia">Expedia</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block font-semibold mb-1">Booking Number</label>
+                            <input type="text" id="formBookingNo" class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-2 pt-4 border-t">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg">မလုပ်တော့ပါ</button>
+                        <button type="submit" class="px-4 py-2 bg-emerald-700 text-white rounded-lg font-semibold hover:bg-emerald-800">သိမ်းဆည်းမည်</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Room Swap Modal -->
+    <div id="swapModal" class="fixed inset-0 bg-slate-900/50 hidden flex justify-center items-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div class="bg-indigo-800 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-lg">ဧည့်သည် အခန်း ပြောင်းရွှေ့ရန်</h3>
+                <button onclick="closeSwapModal()" class="text-white">✕</button>
+            </div>
+            <div class="p-6 space-y-4 text-sm">
+                <input type="hidden" id="swapSourceIndex">
+                <div>
+                    <p class="text-slate-600 mb-1">လက်ရှိ အခန်း / Bed:</p>
+                    <p id="swapSourceText" class="font-bold text-base text-slate-800"></p>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">ပြောင်းရွှေ့လိုသည့် အခန်း / Bed ရွေးပါ:</label>
+                    <select id="swapTargetSelect" class="w-full px-3 py-2 border rounded-lg text-sm"></select>
+                </div>
+                <div class="flex justify-end space-x-2 pt-4 border-t">
+                    <button type="button" onclick="closeSwapModal()" class="px-4 py-2 border rounded-lg">မလုပ်တော့ပါ</button>
+                    <button type="button" onclick="confirmSwap()" class="px-4 py-2 bg-indigo-700 text-white rounded-lg font-semibold">ပြောင်းရွှေ့မည်</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function generateBedList(prefix, count, building, floor, bedType) {
+            const list = [];
+            for (let i = 1; i <= count; i++) {
+                const numStr = i < 10 ? '0' + i : '' + i;
+                list.push({
+                    bedNumber: `${prefix}${numStr}`,
+                    building: building,
+                    floor: floor,
+                    bedType: bedType,
+                    status: "Available",
+                    guestName: "",
+                    checkIn: "",
+                    checkOut: "",
+                    ota: "",
+                    bookingNo: ""
+                });
+            }
+            return list;
+        }
+
+        const defaultRoomsData = [
+            ...generateBedList('M3A', 60, 'M', '3', '1 capsule (Mix Dorm)'),
+            ...generateBedList('M4A', 60, 'M', '4', '1 capsule (Mix Dorm)'),
+            ...generateBedList('M3B', 60, 'M', '3', '1 capsule (Mix Dorm)'),
+            ...generateBedList('E3A', 60, 'E', '3', '1 capsule (Female Dorm)'),
+            ...generateBedList('E3B', 60, 'E', '3', '1 capsule (Female Dorm)')
+        ];
+
+        let roomsData = [];
+
+        function formatDateDisplay(dtString) {
+            if (!dtString) return '-';
+            const dt = new Date(dtString);
+            if (isNaN(dt.getTime())) return dtString.split('T')[0];
+            const day = String(dt.getDate()).padStart(2, '0');
+            const month = String(dt.getMonth() + 1).padStart(2, '0');
+            const year = dt.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        function loadSavedData() {
+            const saved = localStorage.getItem('green_group_rooms_data_v2');
+            if (saved) {
+                try { roomsData = JSON.parse(saved); } catch(e) { roomsData = [...defaultRoomsData]; }
+            } else {
+                roomsData = [...defaultRoomsData];
+            }
+        }
+
+        function saveDataToStorage() {
+            localStorage.setItem('green_group_rooms_data_v2', JSON.stringify(roomsData));
+            showSaveNotification();
+        }
+
+        function showSaveNotification() {
+            const statusEl = document.getElementById('saveStatus');
+            if (statusEl) {
+                statusEl.innerText = "💾 Saved!";
+                statusEl.classList.add('bg-emerald-500');
+                setTimeout(() => {
+                    statusEl.innerText = "💾 Auto Saved";
+                    statusEl.classList.remove('bg-emerald-500');
+                }, 1000);
+            }
+        }
+
+        function resetToDefaultData() {
+            if (confirm("စာရင်းအားလုံးကို မူလ Bed ၃၀၀ စာရင်းအတိုင်း ပြန်လည်ပြင်ဆင်ရန် သေချာပါသလား?")) {
+                roomsData = JSON.parse(JSON.stringify(defaultRoomsData));
+                saveDataToStorage();
+                filterData();
+            }
+        }
+
+        // Toggle Summary View Visibility
+        function toggleSummaryView() {
+            const panel = document.getElementById('summaryViewPanel');
+            const icon = document.getElementById('summaryToggleIcon');
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                panel.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function renderTable(data = roomsData) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+            data.forEach((item) => {
+                const actualIndex = roomsData.indexOf(item);
+                let statusClass = item.status === 'In House' ? 'status-in-house' : (item.status === 'Check Out' ? 'status-check-out' : 'status-available');
+                tbody.innerHTML += `
+                    <tr class="hover:bg-slate-50 border-b">
+                        <td class="py-3 px-4 font-bold text-slate-800">${item.bedNumber}</td>
+                        <td class="py-3 px-4 text-xs text-slate-500">Bldg ${item.building||'-'} / Fl ${item.floor||'-'}</td>
+                        <td class="py-3 px-4 text-xs">${item.bedType || '-'}</td>
+                        <td class="py-3 px-4">
+                            <span class="inline-block px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${statusClass}">
+                                ${item.status}
+                            </span>
+                        </td>
+                        <td class="py-3 px-4 font-medium">${item.guestName || '-'}</td>
+                        <td class="py-3 px-4 text-xs font-mono">${formatDateDisplay(item.checkIn)}</td>
+                        <td class="py-3 px-4 text-xs font-mono">${formatDateDisplay(item.checkOut)}</td>
+                        <td class="py-3 px-4 text-xs text-indigo-600 font-semibold">${item.ota || '-'}</td>
+                        <td class="py-3 px-4 text-xs font-mono">${item.bookingNo || '-'}</td>
+                        <td class="py-3 px-4 text-center flex justify-center gap-2">
+                            <button onclick="openSwapModal(${actualIndex})" title="Change Room" class="text-indigo-600 hover:text-indigo-800 font-semibold text-xs border border-indigo-200 px-2 py-1 rounded bg-indigo-50">
+                                🔄 ပြောင်း
+                            </button>
+                            <button onclick="openEditModal(${actualIndex})" title="Edit" class="text-emerald-700 hover:text-emerald-900 font-semibold text-xs border border-emerald-200 px-2 py-1 rounded bg-emerald-50">
+                                ✏️ ပြင်
+                            </button>
+                            <button onclick="deleteRoom(${actualIndex})" title="Delete" class="text-rose-600 hover:text-rose-800 font-semibold text-xs border border-rose-200 px-2 py-1 rounded bg-rose-50">
+                                🗑️ ဖျက်
+                            </button>
+                        </td>
+                    </tr>`;
+            });
+            updateStats();
+            renderStatusLists();
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function updateStats() {
+            document.getElementById('stat-total').innerText = roomsData.length;
+            document.getElementById('stat-in-house').innerText = roomsData.filter(r => r.status === 'In House').length;
+            document.getElementById('stat-checkout').innerText = roomsData.filter(r => r.status === 'Check Out').length;
+            document.getElementById('stat-available').innerText = roomsData.filter(r => r.status === 'Available' || !r.guestName).length;
+            const rate = roomsData.length > 0 ? Math.round((roomsData.filter(r => r.status === 'In House').length / roomsData.length) * 100) : 0;
+            document.getElementById('stat-rate').innerText = rate + '%';
+        }
+
+        // Render Bed Badges by Status
+        function renderStatusLists() {
+            const inHouseBeds = roomsData.filter(r => r.status === 'In House');
+            const availableBeds = roomsData.filter(r => r.status === 'Available' || !r.status);
+            const checkOutBeds = roomsData.filter(r => r.status === 'Check Out');
+
+            document.getElementById('count-inhouse-list').innerText = inHouseBeds.length;
+            document.getElementById('count-available-list').innerText = availableBeds.length;
+            document.getElementById('count-checkout-list').innerText = checkOutBeds.length;
+
+            const listInhouseEl = document.getElementById('list-inhouse');
+            const listAvailableEl = document.getElementById('list-available');
+            const listCheckoutEl = document.getElementById('list-checkout');
+
+            listInhouseEl.innerHTML = inHouseBeds.length === 0 ? '<span class="text-xs text-slate-400">မရှိပါ</span>' : '';
+            inHouseBeds.forEach(item => {
+                const idx = roomsData.indexOf(item);
+                listInhouseEl.innerHTML += `<button onclick="openEditModal(${idx})" title="${item.guestName || 'In House'}" class="px-2 py-1 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded text-xs font-semibold border border-emerald-300 transition">${item.bedNumber}</button>`;
+            });
+
+            listAvailableEl.innerHTML = availableBeds.length === 0 ? '<span class="text-xs text-slate-400">မရှိပါ</span>' : '';
+            availableBeds.forEach(item => {
+                const idx = roomsData.indexOf(item);
+                listAvailableEl.innerHTML += `<button onclick="openEditModal(${idx})" title="Available" class="px-2 py-1 bg-sky-100 hover:bg-sky-200 text-sky-800 rounded text-xs font-semibold border border-sky-300 transition">${item.bedNumber}</button>`;
+            });
+
+            listCheckoutEl.innerHTML = checkOutBeds.length === 0 ? '<span class="text-xs text-slate-400">မရှိပါ</span>' : '';
+            checkOutBeds.forEach(item => {
+                const idx = roomsData.indexOf(item);
+                listCheckoutEl.innerHTML += `<button onclick="openEditModal(${idx})" title="Check Out" class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded text-xs font-semibold border border-amber-300 transition">${item.bedNumber}</button>`;
+            });
+        }
+
+        // Export Status List to TXT Note File
+        function downloadBedListNote(statusType) {
+            let filtered = [];
+            let title = "";
+
+            if (statusType === 'In House') {
+                filtered = roomsData.filter(r => r.status === 'In House');
+                title = "In-House Bed List (တည်းခိုနေဆဲ စာရင်း)";
+            } else if (statusType === 'Available') {
+                filtered = roomsData.filter(r => r.status === 'Available' || !r.status);
+                title = "Available Bed List (လွတ်နေသော/ဝင်လို့ရသော အခန်း စာရင်း)";
+            } else if (statusType === 'Check Out') {
+                filtered = roomsData.filter(r => r.status === 'Check Out');
+                title = "Check-Out Bed List (ထွက်ခွာပြီး စာရင်း)";
+            }
+
+            if (filtered.length === 0) {
+                alert(`${statusType} စာရင်းတွင် Bed များ မရှိသေးပါ။`);
+                return;
+            }
+
+            const dateStr = new Date().toLocaleDateString('en-GB');
+            let content = `=====================================\n`;
+            content += ` GREEN GROUP HOTEL - ${title.toUpperCase()}\n`;
+            content += ` ရက်စွဲ: ${dateStr}\n`;
+            content += ` စုစုပေါင်း: ${filtered.length} Beds\n`;
+            content += `=====================================\n\n`;
+
+            if (statusType === 'Available') {
+                content += `[ ဝင်လို့ရသော Bed နံပါတ်များ ]\n`;
+                const bedNumbers = filtered.map(item => item.bedNumber).join(', ');
+                content += bedNumbers + `\n\n`;
+            } else {
+                content += `[ အသေးစိတ် စာရင်း ]\n`;
+                filtered.forEach((item, index) => {
+                    content += `${index + 1}. Bed No: ${item.bedNumber} | ဧည့်သည်: ${item.guestName || '-'} | Check-In: ${formatDateDisplay(item.checkIn)} | Check-Out: ${formatDateDisplay(item.checkOut)} | OTA: ${item.ota || '-'}\n`;
+                });
+            }
+
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `${statusType.replace(/\s+/g, '_')}_Beds_${new Date().toISOString().slice(0,10)}.txt`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function filterData() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            const type = document.getElementById('typeFilter').value;
+            const ota = document.getElementById('otaFilter').value;
+
+            const filtered = roomsData.filter(r => {
+                return ((r.bedNumber && r.bedNumber.toLowerCase().includes(search)) || 
+                        (r.guestName && r.guestName.toLowerCase().includes(search)) || 
+                        (r.bookingNo && r.bookingNo.toLowerCase().includes(search))) &&
+                       (!status || r.status === status) && 
+                       (!type || (r.bedType && r.bedType.includes(type))) && 
+                       (!ota || r.ota === ota);
+            });
+            renderTable(filtered);
+        }
+
+        function searchBedInModal() {
+            const query = document.getElementById('modalSearchInput').value.trim().toLowerCase();
+            const resultsSelect = document.getElementById('modalSearchResults');
+            
+            if (!query) {
+                resultsSelect.classList.add('hidden');
+                return;
+            }
+
+            const matches = roomsData.map((item, idx) => ({ ...item, originalIndex: idx }))
+                                     .filter(r => r.bedNumber.toLowerCase().includes(query));
+
+            if (matches.length > 0) {
+                resultsSelect.innerHTML = '<option value="">-- ရလဒ်များမှ မည်သည့် Bed ကိုပြင်မည်နည်း ရွေးပါ --</option>';
+                matches.forEach(m => {
+                    resultsSelect.innerHTML += `<option value="${m.originalIndex}">${m.bedNumber} (${m.status} - ${m.guestName || 'လွတ်နေသည်'})</option>`;
+                });
+                resultsSelect.classList.remove('hidden');
+            } else {
+                resultsSelect.innerHTML = '<option value="">မတွေ့ရှိပါ။</option>';
+                resultsSelect.classList.remove('hidden');
+            }
+        }
+
+        function selectBedFromSearch() {
+            const select = document.getElementById('modalSearchResults');
+            const selectedIdx = select.value;
+            if (selectedIdx !== "" && selectedIdx !== null) {
+                openEditModal(parseInt(selectedIdx));
+            }
+        }
+
+        function deleteRoom(index) {
+            const room = roomsData[index];
+            if (confirm(`${room.bedNumber} ၏ စာရင်းကို အပြီးတိုင် ဖျက်ရန် သေချာပါသလား?`)) {
+                roomsData.splice(index, 1);
+                saveDataToStorage();
+                filterData();
+            }
+        }
+
+        function openSwapModal(index) {
+            const sourceRoom = roomsData[index];
+            document.getElementById('swapSourceIndex').value = index;
+            document.getElementById('swapSourceText').innerText = `${sourceRoom.bedNumber} (${sourceRoom.guestName || 'No Guest'})`;
+            
+            const select = document.getElementById('swapTargetSelect');
+            select.innerHTML = '';
+            
+            roomsData.forEach((room, idx) => {
+                if (idx !== index) {
+                    select.innerHTML += `<option value="${idx}">${room.bedNumber} - ${room.status} (${room.guestName || 'Empty'})</option>`;
+                }
+            });
+            
+            document.getElementById('swapModal').classList.remove('hidden');
+        }
+
+        function closeSwapModal() { document.getElementById('swapModal').classList.add('hidden'); }
+
+        function confirmSwap() {
+            const srcIdx = parseInt(document.getElementById('swapSourceIndex').value);
+            const targetIdx = parseInt(document.getElementById('swapTargetSelect').value);
+            
+            const tempGuest = {
+                guestName: roomsData[srcIdx].guestName,
+                checkIn: roomsData[srcIdx].checkIn,
+                checkOut: roomsData[srcIdx].checkOut,
+                ota: roomsData[srcIdx].ota,
+                bookingNo: roomsData[srcIdx].bookingNo,
+                status: roomsData[srcIdx].status
+            };
+
+            roomsData[srcIdx].guestName = roomsData[targetIdx].guestName;
+            roomsData[srcIdx].checkIn = roomsData[targetIdx].checkIn;
+            roomsData[srcIdx].checkOut = roomsData[targetIdx].checkOut;
+            roomsData[srcIdx].ota = roomsData[targetIdx].ota;
+            roomsData[srcIdx].bookingNo = roomsData[targetIdx].bookingNo;
+            roomsData[srcIdx].status = roomsData[targetIdx].status;
+
+            roomsData[targetIdx].guestName = tempGuest.guestName;
+            roomsData[targetIdx].checkIn = tempGuest.checkIn;
+            roomsData[targetIdx].checkOut = tempGuest.checkOut;
+            roomsData[targetIdx].ota = tempGuest.ota;
+            roomsData[targetIdx].bookingNo = tempGuest.bookingNo;
+            roomsData[targetIdx].status = tempGuest.status;
+
+            saveDataToStorage();
+            closeSwapModal();
+            filterData();
+        }
+
+        function exportToCSV() {
+            if (roomsData.length === 0) {
+                alert("ဒေါင်းလုဒ်ဆွဲရန် စာရင်းများ မရှိပါ။");
+                return;
+            }
+            const exportData = roomsData.map(item => ({
+                ...item,
+                checkInFormatted: formatDateDisplay(item.checkIn),
+                checkOutFormatted: formatDateDisplay(item.checkOut)
+            }));
+            const csv = Papa.unparse(exportData);
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Hotel_Room_Report_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function openAddModal() {
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('roomForm').reset();
+            document.getElementById('modalSearchInput').value = "";
+            document.getElementById('modalSearchResults').classList.add('hidden');
+            document.getElementById('roomModal').classList.remove('hidden');
+        }
+
+        function openEditModal(index) {
+            const room = roomsData[index];
+            document.getElementById('editIndex').value = index;
+            document.getElementById('formBedNo').value = room.bedNumber || '';
+            document.getElementById('formStatus').value = room.status || 'Available';
+            document.getElementById('formGuestName').value = room.guestName || '';
+            document.getElementById('formCheckIn').value = room.checkIn ? room.checkIn.split('T')[0] : '';
+            document.getElementById('formCheckOut').value = room.checkOut ? room.checkOut.split('T')[0] : '';
+            document.getElementById('formOTA').value = room.ota || '';
+            document.getElementById('formBookingNo').value = room.bookingNo || '';
+            
+            document.getElementById('modalSearchInput').value = room.bedNumber || '';
+            document.getElementById('modalSearchResults').classList.add('hidden');
+            document.getElementById('roomModal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('roomModal').classList.add('hidden'); }
+
+        function saveRoom(e) {
+            e.preventDefault();
+            const idx = parseInt(document.getElementById('editIndex').value);
+            const newItem = {
+                bedNumber: document.getElementById('formBedNo').value,
+                building: idx >= 0 ? roomsData[idx].building : "M",
+                floor: idx >= 0 ? roomsData[idx].floor : "3",
+                bedType: idx >= 0 ? roomsData[idx].bedType : "1 capsule (Mix Dorm)",
+                status: document.getElementById('formStatus').value,
+                guestName: document.getElementById('formGuestName').value,
+                checkIn: document.getElementById('formCheckIn').value,
+                checkOut: document.getElementById('formCheckOut').value,
+                ota: document.getElementById('formOTA').value,
+                bookingNo: document.getElementById('formBookingNo').value
+            };
+            if (idx >= 0) roomsData[idx] = newItem; else roomsData.unshift(newItem);
+            
+            saveDataToStorage();
+            closeModal();
+            filterData();
+        }
+
+        window.onload = function() {
+            loadSavedData();
+            renderTable();
+        };
+    </script>
+</body>
+</html>
