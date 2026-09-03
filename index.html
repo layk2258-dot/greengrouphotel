@@ -214,7 +214,7 @@
                     </div>
                     <div class="flex justify-end space-x-2 pt-4 border-t">
                         <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg">မလုပ်တော့ပါ</button>
-                        <button type="submit" class="px-4 py-2 bg-emerald-700 text-white rounded-lg font-semibold hover:bg-emerald-800">သိမ်းဆည်းမည် (Save Live)</button>
+                        <button type="submit" id="saveBtn" class="px-4 py-2 bg-emerald-700 text-white rounded-lg font-semibold hover:bg-emerald-800">သိမ်းဆည်းမည် (Save Live)</button>
                     </div>
                 </form>
             </div>
@@ -241,13 +241,15 @@
                 </div>
                 <div class="flex justify-end space-x-2 pt-4 border-t">
                     <button type="button" onclick="closeMoveModal()" class="px-4 py-2 border rounded-lg">မလုပ်တော့ပါ</button>
-                    <button type="button" onclick="confirmRoomMove()" class="px-4 py-2 bg-indigo-700 text-white rounded-lg font-semibold hover:bg-indigo-800">ပြောင်းရွှေ့မည် (Confirm Move)</button>
+                    <button type="button" id="moveConfirmBtn" onclick="confirmRoomMove()" class="px-4 py-2 bg-indigo-700 text-white rounded-lg font-semibold hover:bg-indigo-800">ပြောင်းရွှေ့မည် (Confirm Move)</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        let roomsData = [];
+
         function generateAllBeds() {
             const prefixes = ["E3A", "E3B", "E4A", "E4B", "M3A", "M3B", "M4A", "M4B"];
             let beds = [];
@@ -276,8 +278,7 @@
             return beds;
         }
 
-        let roomsData = [];
-
+        // Firebase Cloud Real-time Listener (Data ပြောင်းတိုင်း တန်းပေါ်စေရန်)
         function initRealtimeSync() {
             const checkFirebase = setInterval(() => {
                 if (window.firebaseDB) {
@@ -296,23 +297,35 @@
                                 }
                             });
 
-                            renderTable(roomsData);
+                            filterData(); // ရွေးချယ်ထားသော Filter အတိုင်း Auto Sync လုပ်ပေးမည်
                             updateDashboard();
-                            document.getElementById("saveStatus").innerText = "🟢 Real-time Cloud Connected";
+                            document.getElementById("saveStatus").innerText = "🟢 Live Auto-Sync Active";
                         } else {
                             const defaultBeds = generateAllBeds();
                             window.setDoc(roomDocRef, { list: defaultBeds });
                         }
+                    }, (error) => {
+                        console.error("Sync Error:", error);
+                        document.getElementById("saveStatus").innerText = "🔴 Cloud Disconnected";
                     });
                 }
-            }, 500);
+            }, 300);
+        }
+
+        async function syncToCloud() {
+            if (window.firebaseDB) {
+                document.getElementById("saveStatus").innerText = "🟡 Syncing...";
+                const roomDocRef = window.doc(window.firebaseDB, "hotel", "rooms_data");
+                await window.setDoc(roomDocRef, { list: roomsData });
+            }
         }
 
         function renderTable(data) {
             const tbody = document.getElementById("tableBody");
             tbody.innerHTML = "";
 
-            data.forEach((room, index) => {
+            data.forEach((room) => {
+                const originalIndex = roomsData.findIndex(r => r.bedNumber === room.bedNumber);
                 let statusClass = "status-available";
                 if (room.status === "In House") statusClass = "status-in-house";
                 if (room.status === "Check Out") statusClass = "status-check-out";
@@ -333,15 +346,15 @@
                     <td class="py-3 px-4 text-xs">${room.bookingNo || "-"}</td>
                     <td class="py-3 px-4 text-center">
                         <div class="flex items-center justify-center space-x-1">
-                            <button onclick="editRoom(${index})" class="text-xs bg-slate-100 hover:bg-emerald-600 hover:text-white px-2 py-1 rounded transition" title="ပြင်ဆင်ရန်">
+                            <button onclick="editRoom(${originalIndex})" class="text-xs bg-slate-100 hover:bg-emerald-600 hover:text-white px-2 py-1 rounded transition" title="ပြင်ဆင်ရန်">
                                 ပြင်
                             </button>
                             ${isOccupied ? `
-                                <button onclick="openMoveModal(${index})" class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-600 hover:text-white px-2 py-1 rounded transition font-semibold" title="အခန်းပြောင်းရန်">
+                                <button onclick="openMoveModal(${originalIndex})" class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-600 hover:text-white px-2 py-1 rounded transition font-semibold" title="အခန်းပြောင်းရန်">
                                     Move
                                 </button>
                             ` : ''}
-                            <button onclick="deleteRoom(${index})" class="text-xs bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white px-2 py-1 rounded transition" title="ဖျက်ရန်">
+                            <button onclick="deleteRoom(${originalIndex})" class="text-xs bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white px-2 py-1 rounded transition" title="ဖျက်ရန်">
                                 ဖျက်
                             </button>
                         </div>
@@ -422,12 +435,8 @@
                 roomsData[sourceIndex].ota = "";
                 roomsData[sourceIndex].bookingNo = "";
 
-                if (window.firebaseDB) {
-                    const roomDocRef = window.doc(window.firebaseDB, "hotel", "rooms_data");
-                    await window.setDoc(roomDocRef, { list: roomsData });
-                }
-
                 closeMoveModal();
+                await syncToCloud(); // Cloud သို့ တန်းတင်မည်
             }
         }
 
@@ -435,10 +444,7 @@
             const room = roomsData[index];
             if (confirm(`အခန်း/Bed No [ ${room.bedNumber} ] ကို စနစ်ထဲမှ လုံးဝဖျက်ထုတ်ရန် သေချာပါသလား?`)) {
                 roomsData.splice(index, 1);
-                if (window.firebaseDB) {
-                    const roomDocRef = window.doc(window.firebaseDB, "hotel", "rooms_data");
-                    await window.setDoc(roomDocRef, { list: roomsData });
-                }
+                await syncToCloud(); // Cloud သို့ တန်းတင်မည်
             }
         }
 
@@ -481,12 +487,8 @@
                 roomsData.push(updatedRoom);
             }
 
-            if (window.firebaseDB) {
-                const roomDocRef = window.doc(window.firebaseDB, "hotel", "rooms_data");
-                await window.setDoc(roomDocRef, { list: roomsData });
-            }
-
             closeModal();
+            await syncToCloud(); // Cloud သို့ တန်းတင်မည်
         }
 
         function closeModal() {
@@ -521,11 +523,8 @@
 
         async function resetToDefaultData() {
             if (confirm("အခန်း ၄၈၀ လုံး၏ Data များကို မူလအတိုင်း ပြန်လည် Reset ပြုလုပ်မှာ သေချာပါသလား?")) {
-                const defaultBeds = generateAllBeds();
-                if (window.firebaseDB) {
-                    const roomDocRef = window.doc(window.firebaseDB, "hotel", "rooms_data");
-                    await window.setDoc(roomDocRef, { list: defaultBeds });
-                }
+                roomsData = generateAllBeds();
+                await syncToCloud();
             }
         }
 
