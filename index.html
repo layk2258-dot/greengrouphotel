@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
+    <!-- Google Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -63,6 +64,7 @@
                     🔄 Reset Default
                 </button>
 
+                <!-- Export Dropdown -->
                 <div class="relative inline-block text-left">
                     <button onclick="toggleExportMenu()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition">
                         <i data-lucide="download" class="w-4 h-4"></i> Export Data ▾
@@ -83,6 +85,7 @@
     </header>
 
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <!-- Dashboard Stats -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                 <p class="text-xs font-semibold text-slate-500 uppercase">စုစုပေါင်း Bed/Room</p>
@@ -106,6 +109,7 @@
             </div>
         </div>
 
+        <!-- Search and Filters -->
         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
             <input type="text" id="searchInput" oninput="filterData()" placeholder="Bed No, ဧည့်သည်အမည်..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
             <select id="statusFilter" onchange="filterData()" class="w-full py-2 px-3 border border-slate-300 rounded-lg text-sm">
@@ -128,12 +132,14 @@
                 <option value="Expedia">Expedia</option>
             </select>
 
+            <!-- Check Out Date (On or Before) Filter -->
             <div class="relative flex items-center">
-                <input type="date" id="checkoutDateFilter" onchange="filterData()" title="Check Out ရက်စွဲဖြင့် ရှာရန်" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
+                <input type="date" id="checkoutDateFilter" onchange="filterData()" title="ဒီရက်စွဲ မတိုင်မီ အခန်းများကြည့်ရန်" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
                 <button onclick="clearCheckoutDate()" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 bg-white px-1 font-bold" title="ရက်စွဲ ပြန်ဖျက်ရန်">✕</button>
             </div>
         </div>
 
+        <!-- Table Structure -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm text-slate-600" id="mainTable">
@@ -157,6 +163,7 @@
         </div>
     </div>
 
+    <!-- Edit/Add Modal Form -->
     <div id="roomModal" class="fixed inset-0 bg-slate-900/50 hidden flex justify-center items-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden">
             <div class="bg-emerald-800 text-white px-6 py-4 flex justify-between items-center">
@@ -220,6 +227,7 @@
         </div>
     </div>
 
+    <!-- Room Move Modal -->
     <div id="moveModal" class="fixed inset-0 bg-slate-900/50 hidden flex justify-center items-center z-50 p-4">
         <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
             <div class="bg-indigo-800 text-white px-6 py-4 flex justify-between items-center">
@@ -500,13 +508,13 @@
             document.getElementById("roomModal").classList.remove("hidden");
         }
 
-        // Filter Logic ပြင်ဆင်ထားသော Function
+        // ရွေးချယ်ထားသော Date မတိုင်မီ Check Out အားလုံးစစ်ထုတ်ပြသရန် Logic
         function filterData() {
             const search = document.getElementById("searchInput").value.toLowerCase();
             const status = document.getElementById("statusFilter").value;
             const type = document.getElementById("typeFilter").value;
             const ota = document.getElementById("otaFilter").value;
-            const checkoutDate = document.getElementById("checkoutDateFilter").value; // Check Out Date Filter ရယူခြင်း
+            const checkoutDate = document.getElementById("checkoutDateFilter").value;
 
             const filtered = roomsData.filter(r => {
                 const matchSearch = r.bedNumber.toLowerCase().includes(search) || 
@@ -515,7 +523,12 @@
                 const matchStatus = !status || r.status === status;
                 const matchType = !type || r.bedType.includes(type);
                 const matchOTA = !ota || r.ota === ota;
-                const matchCheckoutDate = !checkoutDate || r.checkOut === checkoutDate; // Check Out Date တိုက်စစ်ခြင်း
+                
+                // ရွေးထားသည့် ရက်စွဲနှင့် ထိုရက်စွဲမတိုင်မီ ရက်စွဲများကိုပါ နှိုင်းယှဉ်စစ်ဆေးခြင်း
+                let matchCheckoutDate = true;
+                if (checkoutDate) {
+                    matchCheckoutDate = r.checkOut && (r.checkOut <= checkoutDate);
+                }
 
                 return matchSearch && matchStatus && matchType && matchOTA && matchCheckoutDate;
             });
@@ -523,7 +536,6 @@
             renderTable(filtered);
         }
 
-        // Date Filter အား Reset လုပ်ရန် Function
         function clearCheckoutDate() {
             document.getElementById("checkoutDateFilter").value = "";
             filterData();
