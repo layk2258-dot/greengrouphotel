@@ -159,7 +159,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
                 <!-- Search Box -->
                 <div class="relative flex items-center">
-                    <input type="text" id="searchInput" oninput="filterData()" placeholder="Bed No, ဧည့်သည်အမည်..." class="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
+                    <input type="text" id="searchInput" oninput="filterData()" placeholder="Bed No, ဧည့်သည်အမည်, Remark..." class="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
                     <button onclick="clearFilter('searchInput')" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 font-bold" title="ပြန်ဖျက်ရန်">✕</button>
                 </div>
 
@@ -227,6 +227,7 @@
                             <th class="py-3 px-4">Check Out</th>
                             <th class="py-3 px-4">OTA Channel</th>
                             <th class="py-3 px-4">Booking No</th>
+                            <th class="py-3 px-4">Remark</th>
                             <th class="py-3 px-4 text-center">Action</th>
                         </tr>
                     </thead>
@@ -291,7 +292,12 @@
                             <input type="text" id="formBookingNo" class="w-full px-3 py-2 border rounded-lg">
                         </div>
                     </div>
-                    <!-- Added Clear Form Fields Button -->
+                    <!-- Remark Field Added -->
+                    <div>
+                        <label class="block font-semibold mb-1 text-rose-700">Remark (မှတ်ချက်)</label>
+                        <input type="text" id="formRemark" placeholder="ဥပမာ - မီးပျက်နေသည် / ပြင်ဆင်နေသည်" class="w-full px-3 py-2 border border-rose-300 rounded-lg focus:outline-rose-600">
+                    </div>
+                    <!-- Clear Form Fields Button -->
                     <div class="flex justify-between items-center pt-4 border-t">
                         <button type="button" onclick="clearModalFields()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-semibold transition flex items-center gap-1">
                             🧹 Clear All Fields
@@ -355,7 +361,8 @@
                         checkIn: "",
                         checkOut: "",
                         ota: "",
-                        bookingNo: ""
+                        bookingNo: "",
+                        remark: ""
                     });
                 }
             });
@@ -415,11 +422,13 @@
                 if (room.status === "Check Out") statusClass = "status-check-out";
 
                 const isOccupied = room.status === "In House";
+                const hasRemark = room.remark && room.remark.trim() !== "";
+                const bedStyle = hasRemark ? "line-through decoration-rose-600 decoration-2 text-rose-600 font-bold" : "font-bold text-emerald-800";
 
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-slate-50 border-b border-slate-100";
                 tr.innerHTML = `
-                    <td class="py-3 px-4 font-bold text-emerald-800">${room.bedNumber}</td>
+                    <td class="py-3 px-4 ${bedStyle}">${room.bedNumber}</td>
                     <td class="py-3 px-4">Bldg ${room.building} - Fl ${room.floor}</td>
                     <td class="py-3 px-4 text-xs font-semibold ${room.bedNumber.startsWith('E') ? 'text-pink-600' : 'text-indigo-600'}">${room.bedType}</td>
                     <td class="py-3 px-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full ${statusClass}">${room.status}</span></td>
@@ -428,6 +437,7 @@
                     <td class="py-3 px-4 text-xs font-semibold text-rose-600">${room.checkOut || "-"}</td>
                     <td class="py-3 px-4 text-xs">${room.ota || "-"}</td>
                     <td class="py-3 px-4 text-xs">${room.bookingNo || "-"}</td>
+                    <td class="py-3 px-4 text-xs text-rose-600 font-semibold">${room.remark || "-"}</td>
                     <td class="py-3 px-4 text-center">
                         <div class="flex items-center justify-center space-x-1">
                             <button onclick="editRoom(${originalIndex})" class="text-xs bg-slate-100 hover:bg-emerald-600 hover:text-white px-2 py-1 rounded transition" title="ပြင်ဆင်ရန်">
@@ -556,6 +566,7 @@
                 roomsData[targetIndex].checkOut = source.checkOut;
                 roomsData[targetIndex].ota = source.ota;
                 roomsData[targetIndex].bookingNo = source.bookingNo;
+                roomsData[targetIndex].remark = source.remark;
 
                 roomsData[sourceIndex].status = "Available";
                 roomsData[sourceIndex].guestName = "";
@@ -563,6 +574,7 @@
                 roomsData[sourceIndex].checkOut = "";
                 roomsData[sourceIndex].ota = "";
                 roomsData[sourceIndex].bookingNo = "";
+                roomsData[sourceIndex].remark = "";
 
                 closeMoveModal();
                 await syncToCloud();
@@ -583,11 +595,12 @@
             document.getElementById("modalTitle").innerText = "အခန်း / Bed ပြင်ဆင်ရန်";
             document.getElementById("formBedNo").value = room.bedNumber;
             document.getElementById("formStatus").value = room.status;
-            document.getElementById("formGuestName").value = room.guestName;
-            document.getElementById("formCheckIn").value = room.checkIn;
-            document.getElementById("formCheckOut").value = room.checkOut;
-            document.getElementById("formOTA").value = room.ota;
-            document.getElementById("formBookingNo").value = room.bookingNo;
+            document.getElementById("formGuestName").value = room.guestName || "";
+            document.getElementById("formCheckIn").value = room.checkIn || "";
+            document.getElementById("formCheckOut").value = room.checkOut || "";
+            document.getElementById("formOTA").value = room.ota || "";
+            document.getElementById("formBookingNo").value = room.bookingNo || "";
+            document.getElementById("formRemark").value = room.remark || "";
             document.getElementById("roomModal").classList.remove("hidden");
         }
 
@@ -599,6 +612,7 @@
             document.getElementById("formCheckOut").value = "";
             document.getElementById("formOTA").value = "";
             document.getElementById("formBookingNo").value = "";
+            document.getElementById("formRemark").value = "";
         }
 
         async function saveRoom(e) {
@@ -617,7 +631,8 @@
                 checkIn: document.getElementById("formCheckIn").value,
                 checkOut: document.getElementById("formCheckOut").value,
                 ota: document.getElementById("formOTA").value,
-                bookingNo: document.getElementById("formBookingNo").value.trim()
+                bookingNo: document.getElementById("formBookingNo").value.trim(),
+                remark: document.getElementById("formRemark").value.trim()
             };
 
             if (index >= 0) {
@@ -651,7 +666,8 @@
             const filtered = roomsData.filter(r => {
                 const matchSearch = r.bedNumber.toLowerCase().includes(search) || 
                                     r.guestName.toLowerCase().includes(search) || 
-                                    r.bookingNo.toLowerCase().includes(search);
+                                    r.bookingNo.toLowerCase().includes(search) ||
+                                    (r.remark && r.remark.toLowerCase().includes(search));
                 const matchStatus = !status || r.status === status;
                 const matchType = !type || r.bedType.includes(type);
                 const matchOTA = !ota || r.ota === ota;
