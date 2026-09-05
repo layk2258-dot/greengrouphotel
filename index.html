@@ -155,31 +155,60 @@
         </details>
 
         <!-- Search and Filters -->
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-            <input type="text" id="searchInput" oninput="filterData()" placeholder="Bed No, ဧည့်သည်အမည်..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
-            <select id="statusFilter" onchange="filterData()" class="w-full py-2 px-3 border border-slate-300 rounded-lg text-sm">
-                <option value="">Status အားလုံး</option>
-                <option value="In House">In House</option>
-                <option value="Check Out">Check Out</option>
-                <option value="Available">Available</option>
-            </select>
-            <select id="typeFilter" onchange="filterData()" class="w-full py-2 px-3 border border-slate-300 rounded-lg text-sm">
-                <option value="">Bed Type အားလုံး</option>
-                <option value="Female Dorm">Female Dorm</option>
-                <option value="Mix Dorm">Mix Dorm</option>
-            </select>
-            <select id="otaFilter" onchange="filterData()" class="w-full py-2 px-3 border border-slate-300 rounded-lg text-sm">
-                <option value="">OTA အားလုံး</option>
-                <option value="Booking.com">Booking.com</option>
-                <option value="Trip.com">Trip.com</option>
-                <option value="Hostelworld">Hostelworld</option>
-                <option value="Agoda">Agoda</option>
-                <option value="Expedia">Expedia</option>
-            </select>
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
+                <!-- Search Box -->
+                <div class="relative flex items-center">
+                    <input type="text" id="searchInput" oninput="filterData()" placeholder="Bed No, ဧည့်သည်အမည်..." class="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
+                    <button onclick="clearFilter('searchInput')" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 font-bold" title="ပြန်ဖျက်ရန်">✕</button>
+                </div>
 
-            <div class="relative flex items-center">
-                <input type="date" id="checkoutDateFilter" onchange="filterData()" title="ဒီရက်စွဲ မတိုင်မီ အခန်းများကြည့်ရန်" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
-                <button onclick="clearCheckoutDate()" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 bg-white px-1 font-bold" title="ရက်စွဲ ပြန်ဖျက်ရန်">✕</button>
+                <!-- Status Filter -->
+                <div class="relative flex items-center">
+                    <select id="statusFilter" onchange="filterData()" class="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm appearance-none bg-white">
+                        <option value="">Status အားလုံး</option>
+                        <option value="In House">In House</option>
+                        <option value="Check Out">Check Out</option>
+                        <option value="Available">Available</option>
+                    </select>
+                    <button onclick="clearFilter('statusFilter')" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 font-bold" title="ပြန်ဖျက်ရန်">✕</button>
+                </div>
+
+                <!-- Type Filter -->
+                <div class="relative flex items-center">
+                    <select id="typeFilter" onchange="filterData()" class="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm appearance-none bg-white">
+                        <option value="">Bed Type အားလုံး</option>
+                        <option value="Female Dorm">Female Dorm</option>
+                        <option value="Mix Dorm">Mix Dorm</option>
+                    </select>
+                    <button onclick="clearFilter('typeFilter')" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 font-bold" title="ပြန်ဖျက်ရန်">✕</button>
+                </div>
+
+                <!-- OTA Filter -->
+                <div class="relative flex items-center">
+                    <select id="otaFilter" onchange="filterData()" class="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm appearance-none bg-white">
+                        <option value="">OTA အားလုံး</option>
+                        <option value="Booking.com">Booking.com</option>
+                        <option value="Trip.com">Trip.com</option>
+                        <option value="Hostelworld">Hostelworld</option>
+                        <option value="Agoda">Agoda</option>
+                        <option value="Expedia">Expedia</option>
+                    </select>
+                    <button onclick="clearFilter('otaFilter')" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 font-bold" title="ပြန်ဖျက်ရန်">✕</button>
+                </div>
+
+                <!-- Check Out Date Filter -->
+                <div class="relative flex items-center">
+                    <input type="date" id="checkoutDateFilter" onchange="filterData()" title="ဒီရက်စွဲ မတိုင်မီ အခန်းများကြည့်ရန်" class="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
+                    <button onclick="clearCheckoutDate()" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 font-bold" title="ရက်စွဲ ပြန်ဖျက်ရန်">✕</button>
+                </div>
+            </div>
+
+            <!-- Clear All Filters Button -->
+            <div class="flex justify-end">
+                <button onclick="clearAllFilters()" class="text-xs bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 px-3 py-1.5 rounded-md border border-slate-200 transition flex items-center gap-1 font-medium">
+                    🗑️ Reset Filters
+                </button>
             </div>
         </div>
 
@@ -262,9 +291,15 @@
                             <input type="text" id="formBookingNo" class="w-full px-3 py-2 border rounded-lg">
                         </div>
                     </div>
-                    <div class="flex justify-end space-x-2 pt-4 border-t">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg">မလုပ်တော့ပါ</button>
-                        <button type="submit" id="saveBtn" class="px-4 py-2 bg-emerald-700 text-white rounded-lg font-semibold hover:bg-emerald-800">သိမ်းဆည်းမည် (Save Live)</button>
+                    <!-- Added Clear Form Fields Button -->
+                    <div class="flex justify-between items-center pt-4 border-t">
+                        <button type="button" onclick="clearModalFields()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-semibold transition flex items-center gap-1">
+                            🧹 Clear All Fields
+                        </button>
+                        <div class="flex space-x-2">
+                            <button type="button" onclick="closeModal()" class="px-4 py-2 border rounded-lg">မလုပ်တော့ပါ</button>
+                            <button type="submit" id="saveBtn" class="px-4 py-2 bg-emerald-700 text-white rounded-lg font-semibold hover:bg-emerald-800">သိမ်းဆည်းမည် (Save Live)</button>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -430,7 +465,6 @@
             renderStatusLists(inHouse, available, checkOut);
         }
 
-        // Updated function: Renders ONLY Bed Numbers across In House, Available, and Check Out lists
         function renderStatusLists(inHouse, available, checkOut) {
             document.getElementById("count-in-house").innerText = inHouse.length;
             document.getElementById("count-available").innerText = available.length;
@@ -557,6 +591,16 @@
             document.getElementById("roomModal").classList.remove("hidden");
         }
 
+        // Function to clear all fields in the edit modal
+        function clearModalFields() {
+            document.getElementById("formStatus").value = "Available";
+            document.getElementById("formGuestName").value = "";
+            document.getElementById("formCheckIn").value = "";
+            document.getElementById("formCheckOut").value = "";
+            document.getElementById("formOTA").value = "";
+            document.getElementById("formBookingNo").value = "";
+        }
+
         async function saveRoom(e) {
             e.preventDefault();
             const index = parseInt(document.getElementById("editIndex").value);
@@ -623,7 +667,21 @@
             renderTable(filtered);
         }
 
+        function clearFilter(id) {
+            document.getElementById(id).value = "";
+            filterData();
+        }
+
         function clearCheckoutDate() {
+            document.getElementById("checkoutDateFilter").value = "";
+            filterData();
+        }
+
+        function clearAllFilters() {
+            document.getElementById("searchInput").value = "";
+            document.getElementById("statusFilter").value = "";
+            document.getElementById("typeFilter").value = "";
+            document.getElementById("otaFilter").value = "";
             document.getElementById("checkoutDateFilter").value = "";
             filterData();
         }
