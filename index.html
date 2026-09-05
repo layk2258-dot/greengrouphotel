@@ -64,16 +64,22 @@
                     🔄 Reset Default
                 </button>
 
-                <!-- Export Dropdown -->
+                <!-- Save & Export Dropdown Menu -->
                 <div class="relative inline-block text-left">
                     <button onclick="toggleExportMenu()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition">
-                        <i data-lucide="download" class="w-4 h-4"></i> Export Data ▾
+                        <i data-lucide="download" class="w-4 h-4"></i> Save / Export Data ▾
                     </button>
-                    <div id="exportDropdown" class="hidden absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-1 z-50 border border-slate-200 text-slate-700 text-xs">
-                        <a href="#" onclick="exportData('excel')" class="block px-4 py-2 hover:bg-slate-100"> Excel (.xlsx)</a>
-                        <a href="#" onclick="exportData('csv')" class="block px-4 py-2 hover:bg-slate-100"> CSV (.csv)</a>
-                        <a href="#" onclick="exportData('word')" class="block px-4 py-2 hover:bg-slate-100"> Word Document (.doc)</a>
-                        <a href="#" onclick="exportData('html')" class="block px-4 py-2 hover:bg-slate-100"> HTML File (.html)</a>
+                    <div id="exportDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-md shadow-lg py-1 z-50 border border-slate-200 text-slate-700 text-xs">
+                        <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b">📝 Notepad Bed Numbers Only</div>
+                        <a href="#" onclick="exportToNotepad('inhouse_beds')" class="block px-4 py-2 hover:bg-slate-100 font-semibold text-emerald-600">🟢 In House Bed Numbers Only</a>
+                        <a href="#" onclick="exportToNotepad('checkout_beds')" class="block px-4 py-2 hover:bg-slate-100 font-semibold text-amber-600">⚪ Check Out Bed Numbers Only</a>
+                        <a href="#" onclick="exportToNotepad('all')" class="block px-4 py-2 hover:bg-slate-100 font-semibold text-indigo-600 border-b">📝 Notepad (All Bed Numbers)</a>
+                        
+                        <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b">📊 Other Formats</div>
+                        <a href="#" onclick="exportData('excel')" class="block px-4 py-2 hover:bg-slate-100">Excel (.xlsx)</a>
+                        <a href="#" onclick="exportData('csv')" class="block px-4 py-2 hover:bg-slate-100">CSV (.csv)</a>
+                        <a href="#" onclick="exportData('word')" class="block px-4 py-2 hover:bg-slate-100">Word Document (.doc)</a>
+                        <a href="#" onclick="exportData('html')" class="block px-4 py-2 hover:bg-slate-100">HTML File (.html)</a>
                     </div>
                 </div>
 
@@ -84,7 +90,7 @@
         </div>
     </header>
 
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-4">
         <!-- Dashboard Stats -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
@@ -109,6 +115,45 @@
             </div>
         </div>
 
+        <!-- Collapsible Dropdown Status Summary Section -->
+        <details class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden group">
+            <summary class="p-3 bg-slate-50 hover:bg-slate-100 cursor-pointer font-semibold text-sm text-slate-700 flex justify-between items-center select-none transition">
+                <span class="flex items-center gap-2">
+                    📋 <span>အခန်းများအခြေအနေ အသေးစိတ်ကြည့်ရှုရန် (In House / Available / Check Out Dropdown)</span>
+                </span>
+                <span class="text-xs text-slate-400 group-open:rotate-180 transition-transform duration-200">▼</span>
+            </summary>
+            
+            <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-200 bg-white">
+                <!-- In House Card -->
+                <div class="border border-emerald-200 rounded-lg p-3 bg-emerald-50/20">
+                    <div class="flex justify-between items-center border-b border-emerald-100 pb-2 mb-2">
+                        <h3 class="font-bold text-emerald-800 text-xs">🟢 IN HOUSE (တည်းခိုနေဆဲ)</h3>
+                        <span id="count-in-house" class="bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded text-xs">0</span>
+                    </div>
+                    <div id="list-in-house" class="max-h-40 overflow-y-auto flex flex-wrap gap-1 pr-1"></div>
+                </div>
+
+                <!-- Available Card -->
+                <div class="border border-sky-200 rounded-lg p-3 bg-sky-50/20">
+                    <div class="flex justify-between items-center border-b border-sky-100 pb-2 mb-2">
+                        <h3 class="font-bold text-sky-800 text-xs">🔵 AVAILABLE (လွတ်နေသော)</h3>
+                        <span id="count-available" class="bg-sky-100 text-sky-800 font-bold px-2 py-0.5 rounded text-xs">0</span>
+                    </div>
+                    <div id="list-available" class="max-h-40 overflow-y-auto flex flex-wrap gap-1 pr-1"></div>
+                </div>
+
+                <!-- Check Out Card -->
+                <div class="border border-amber-200 rounded-lg p-3 bg-amber-50/20">
+                    <div class="flex justify-between items-center border-b border-amber-100 pb-2 mb-2">
+                        <h3 class="font-bold text-amber-800 text-xs">⚪ CHECK OUT (ထွက်သွားပြီး)</h3>
+                        <span id="count-checkout" class="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded text-xs">0</span>
+                    </div>
+                    <div id="list-checkout" class="max-h-40 overflow-y-auto flex flex-wrap gap-1 pr-1"></div>
+                </div>
+            </div>
+        </details>
+
         <!-- Search and Filters -->
         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
             <input type="text" id="searchInput" oninput="filterData()" placeholder="Bed No, ဧည့်သည်အမည်..." class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
@@ -132,7 +177,6 @@
                 <option value="Expedia">Expedia</option>
             </select>
 
-            <!-- Check Out Date (On or Before) Filter -->
             <div class="relative flex items-center">
                 <input type="date" id="checkoutDateFilter" onchange="filterData()" title="ဒီရက်စွဲ မတိုင်မီ အခန်းများကြည့်ရန်" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
                 <button onclick="clearCheckoutDate()" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 bg-white px-1 font-bold" title="ရက်စွဲ ပြန်ဖျက်ရန်">✕</button>
@@ -242,8 +286,7 @@
                 </div>
                 <div>
                     <label class="block font-semibold mb-1">ပြောင်းရွှေ့လိုသည့် အခန်းလွတ် (Target Bed) *</label>
-                    <select id="targetBedSelect" class="w-full px-3 py-2 border rounded-lg font-bold text-slate-700">
-                    </select>
+                    <select id="targetBedSelect" class="w-full px-3 py-2 border rounded-lg font-bold text-slate-700"></select>
                 </div>
                 <div class="flex justify-end space-x-2 pt-4 border-t">
                     <button type="button" onclick="closeMoveModal()" class="px-4 py-2 border rounded-lg">မလုပ်တော့ပါ</button>
@@ -373,16 +416,62 @@
 
         function updateDashboard() {
             const total = roomsData.length;
-            const inHouse = roomsData.filter(r => r.status === "In House").length;
-            const available = roomsData.filter(r => r.status === "Available").length;
-            const checkOut = roomsData.filter(r => r.status === "Check Out").length;
-            const rate = total > 0 ? Math.round((inHouse / total) * 100) : 0;
+            const inHouse = roomsData.filter(r => r.status === "In House");
+            const available = roomsData.filter(r => r.status === "Available");
+            const checkOut = roomsData.filter(r => r.status === "Check Out");
+            const rate = total > 0 ? Math.round((inHouse.length / total) * 100) : 0;
 
             document.getElementById("stat-total").innerText = total;
-            document.getElementById("stat-in-house").innerText = inHouse;
-            document.getElementById("stat-available").innerText = available;
-            document.getElementById("stat-checkout").innerText = checkOut;
+            document.getElementById("stat-in-house").innerText = inHouse.length;
+            document.getElementById("stat-available").innerText = available.length;
+            document.getElementById("stat-checkout").innerText = checkOut.length;
             document.getElementById("stat-rate").innerText = rate + "%";
+
+            renderStatusLists(inHouse, available, checkOut);
+        }
+
+        // Updated function: Renders ONLY Bed Numbers across In House, Available, and Check Out lists
+        function renderStatusLists(inHouse, available, checkOut) {
+            document.getElementById("count-in-house").innerText = inHouse.length;
+            document.getElementById("count-available").innerText = available.length;
+            document.getElementById("count-checkout").innerText = checkOut.length;
+
+            document.getElementById("list-in-house").innerHTML = inHouse.length > 0 
+                ? inHouse.map(r => `<span class="inline-block bg-emerald-100 text-emerald-800 border border-emerald-200 rounded px-1.5 py-0.5 font-bold text-[11px]">${r.bedNumber}</span>`).join('')
+                : `<div class="text-slate-400 italic text-xs">အခန်း မရှိပါ</div>`;
+
+            document.getElementById("list-available").innerHTML = available.length > 0 
+                ? available.map(r => `<span class="inline-block bg-sky-100 text-sky-800 border border-sky-200 rounded px-1.5 py-0.5 font-bold text-[11px]">${r.bedNumber}</span>`).join('')
+                : `<div class="text-slate-400 italic text-xs">အခန်း မရှိပါ</div>`;
+
+            document.getElementById("list-checkout").innerHTML = checkOut.length > 0 
+                ? checkOut.map(r => `<span class="inline-block bg-amber-100 text-amber-800 border border-amber-200 rounded px-1.5 py-0.5 font-bold text-[11px]">${r.bedNumber}</span>`).join('')
+                : `<div class="text-slate-400 italic text-xs">အခန်း မရှိပါ</div>`;
+        }
+
+        function exportToNotepad(mode = 'all') {
+            document.getElementById("exportDropdown").classList.add("hidden");
+            
+            const inHouse = roomsData.filter(r => r.status === "In House");
+            const checkOut = roomsData.filter(r => r.status === "Check Out");
+            const available = roomsData.filter(r => r.status === "Available");
+
+            let text = "";
+
+            if (mode === 'inhouse_beds') {
+                text = inHouse.length > 0 ? inHouse.map(r => r.bedNumber).join(', ') : "No In-House Beds";
+            } 
+            else if (mode === 'checkout_beds') {
+                text = checkOut.length > 0 ? checkOut.map(r => r.bedNumber).join(', ') : "No Checked-Out Beds";
+            }
+            else if (mode === 'all') {
+                text += `IN HOUSE BEDS (${inHouse.length}):\n${inHouse.map(r => r.bedNumber).join(', ') || 'None'}\n\n`;
+                text += `CHECK OUT BEDS (${checkOut.length}):\n${checkOut.map(r => r.bedNumber).join(', ') || 'None'}\n\n`;
+                text += `AVAILABLE BEDS (${available.length}):\n${available.map(r => r.bedNumber).join(', ') || 'None'}`;
+            }
+
+            const filename = `Beds_${mode}_${new Date().toISOString().slice(0,10)}.txt`;
+            downloadBlob(text, filename, 'text/plain;charset=utf-8');
         }
 
         function openMoveModal(index) {
@@ -508,7 +597,6 @@
             document.getElementById("roomModal").classList.remove("hidden");
         }
 
-        // ရွေးချယ်ထားသော Date မတိုင်မီ Check Out အားလုံးစစ်ထုတ်ပြသရန် Logic
         function filterData() {
             const search = document.getElementById("searchInput").value.toLowerCase();
             const status = document.getElementById("statusFilter").value;
@@ -524,7 +612,6 @@
                 const matchType = !type || r.bedType.includes(type);
                 const matchOTA = !ota || r.ota === ota;
                 
-                // ရွေးထားသည့် ရက်စွဲနှင့် ထိုရက်စွဲမတိုင်မီ ရက်စွဲများကိုပါ နှိုင်းယှဉ်စစ်ဆေးခြင်း
                 let matchCheckoutDate = true;
                 if (checkoutDate) {
                     matchCheckoutDate = r.checkOut && (r.checkOut <= checkoutDate);
