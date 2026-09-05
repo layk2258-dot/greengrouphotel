@@ -369,6 +369,23 @@
             return beds;
         }
 
+        // ည ၁၂:၀၀ AM ကျော်သည်နှင့် Check Out ပြောင်းပေးရန် စစ်ဆေးသည့် Function
+        function checkAutoCheckout() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            let hasChanged = false;
+
+            roomsData.forEach(room => {
+                if (room.status === "In House" && room.checkOut && room.checkOut <= todayStr) {
+                    room.status = "Check Out";
+                    hasChanged = true;
+                }
+            });
+
+            if (hasChanged) {
+                syncToCloud();
+            }
+        }
+
         // Firebase Cloud Real-time Listener
         function initRealtimeSync() {
             const checkFirebase = setInterval(() => {
@@ -388,6 +405,7 @@
                                 }
                             });
 
+                            checkAutoCheckout(); // Data ရောက်လာသည်နှင့် အလိုအလျောက် စစ်ဆေးမည်
                             filterData(); 
                             updateDashboard();
                             document.getElementById("saveStatus").innerText = "🟢 Live Auto-Sync Active";
@@ -751,6 +769,8 @@
 
         window.onload = () => {
             initRealtimeSync();
+            // ၁ မိနစ်လျှင် တစ်ကြိမ် ည ၁၂:၀၀ AM / ရက်စွဲကျော်လွန်မှု ရှိမရှိ စစ်ဆေးပေးမည်
+            setInterval(checkAutoCheckout, 60000);
         };
     </script>
 </body>
