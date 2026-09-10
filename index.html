@@ -3,40 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green Group - Hotel Room Management System</title>
+    <title>Green Group - Hotel Room Management System (Supabase)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
-    <!-- Google Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyCeibWhbSK8t0FdhgJwW6Y7bBeUWqzVgNE",
-            authDomain: "greengroudhotel.firebaseapp.com",
-            projectId: "greengroudhotel",
-            storageBucket: "greengroudhotel.firebasestorage.app",
-            messagingSenderId: "182118228483",
-            appId: "1:182118228483:web:a155024a83da148ee56436",
-            measurementId: "G-1RC1W1YTQ8"
-        };
-
-        try {
-            const app = initializeApp(firebaseConfig);
-            const db = getFirestore(app);
-            window.firebaseDB = db;
-            window.doc = doc;
-            window.setDoc = setDoc;
-            window.getDoc = getDoc;
-            window.onSnapshot = onSnapshot;
-            console.log("Firebase Cloud Live Active!");
-        } catch (e) {
-            console.error("Firebase connection failed.", e);
-        }
-    </script>
+    <!-- Supabase JS Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Padauk:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
@@ -53,18 +27,18 @@
                 <div class="bg-white text-emerald-800 p-2 rounded-lg font-bold text-xl shadow">GG</div>
                 <div>
                     <h1 class="font-bold text-lg leading-tight">Green Group Hotel System</h1>
-                    <p class="text-xs text-emerald-200">Capsule & Room Management (Real-time Multi-Device Sync)</p>
+                    <p class="text-xs text-emerald-200">Capsule & Room Management (Supabase Real-time Sync)</p>
                 </div>
             </div>
             <div class="flex items-center gap-2">
                 <span id="saveStatus" class="text-xs bg-emerald-700/60 text-emerald-100 px-2.5 py-1 rounded-md border border-emerald-600/50 flex items-center gap-1">
-                    🟢 Cloud Connected (Live)
+                    🟢 Supabase Connected (Live)
                 </span>
                 <button onclick="resetToDefaultData()" class="bg-rose-700 hover:bg-rose-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition">
                     🔄 Reset Default
                 </button>
 
-                <!-- Save & Export Dropdown Menu -->
+                <!-- Export Menu -->
                 <div class="relative inline-block text-left">
                     <button onclick="toggleExportMenu()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition">
                         <i data-lucide="download" class="w-4 h-4"></i> Save / Export Data ▾
@@ -125,7 +99,6 @@
             </summary>
             
             <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-slate-200 bg-white">
-                <!-- In House Card -->
                 <div class="border border-emerald-200 rounded-lg p-3 bg-emerald-50/20">
                     <div class="flex justify-between items-center border-b border-emerald-100 pb-2 mb-2">
                         <h3 class="font-bold text-emerald-800 text-xs">🟢 IN HOUSE (တည်းခိုနေဆဲ)</h3>
@@ -134,7 +107,6 @@
                     <div id="list-in-house" class="max-h-40 overflow-y-auto flex flex-wrap gap-1 pr-1"></div>
                 </div>
 
-                <!-- Available Card -->
                 <div class="border border-sky-200 rounded-lg p-3 bg-sky-50/20">
                     <div class="flex justify-between items-center border-b border-sky-100 pb-2 mb-2">
                         <h3 class="font-bold text-sky-800 text-xs">🔵 AVAILABLE (လွတ်နေသော)</h3>
@@ -143,7 +115,6 @@
                     <div id="list-available" class="max-h-40 overflow-y-auto flex flex-wrap gap-1 pr-1"></div>
                 </div>
 
-                <!-- Check Out Card -->
                 <div class="border border-amber-200 rounded-lg p-3 bg-amber-50/20">
                     <div class="flex justify-between items-center border-b border-amber-100 pb-2 mb-2">
                         <h3 class="font-bold text-amber-800 text-xs">⚪ CHECK OUT (ထွက်သွားပြီး)</h3>
@@ -157,13 +128,11 @@
         <!-- Search and Filters -->
         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-3">
             <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-                <!-- Search Box -->
                 <div class="relative flex items-center">
                     <input type="text" id="searchInput" oninput="filterData()" placeholder="Bed No, ဧည့်သည်အမည်, Remark..." class="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
                     <button onclick="clearFilter('searchInput')" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 font-bold" title="ပြန်ဖျက်ရန်">✕</button>
                 </div>
 
-                <!-- Status Filter -->
                 <div class="relative flex items-center">
                     <select id="statusFilter" onchange="filterData()" class="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm appearance-none bg-white">
                         <option value="">Status အားလုံး</option>
@@ -174,7 +143,6 @@
                     <button onclick="clearFilter('statusFilter')" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 font-bold" title="ပြန်ဖျက်ရန်">✕</button>
                 </div>
 
-                <!-- Type Filter -->
                 <div class="relative flex items-center">
                     <select id="typeFilter" onchange="filterData()" class="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm appearance-none bg-white">
                         <option value="">Bed Type အားလုံး</option>
@@ -184,7 +152,6 @@
                     <button onclick="clearFilter('typeFilter')" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 font-bold" title="ပြန်ဖျက်ရန်">✕</button>
                 </div>
 
-                <!-- OTA Filter -->
                 <div class="relative flex items-center">
                     <select id="otaFilter" onchange="filterData()" class="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm appearance-none bg-white">
                         <option value="">OTA အားလုံး</option>
@@ -197,14 +164,12 @@
                     <button onclick="clearFilter('otaFilter')" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 font-bold" title="ပြန်ဖျက်ရန်">✕</button>
                 </div>
 
-                <!-- Check Out Date Filter -->
                 <div class="relative flex items-center">
                     <input type="date" id="checkoutDateFilter" onchange="filterData()" title="ဒီရက်စွဲ မတိုင်မီ အခန်းများကြည့်ရန်" class="w-full pl-3 pr-7 py-2 border border-slate-300 rounded-lg text-sm focus:outline-emerald-600">
                     <button onclick="clearCheckoutDate()" class="absolute right-2 text-xs text-slate-400 hover:text-rose-600 font-bold" title="ရက်စွဲ ပြန်ဖျက်ရန်">✕</button>
                 </div>
             </div>
 
-            <!-- Clear All Filters Button -->
             <div class="flex justify-end">
                 <button onclick="clearAllFilters()" class="text-xs bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 px-3 py-1.5 rounded-md border border-slate-200 transition flex items-center gap-1 font-medium">
                     🗑️ Reset Filters
@@ -246,7 +211,7 @@
             </div>
             <div class="p-6 space-y-4 text-sm">
                 <form id="roomForm" onsubmit="saveRoom(event)" class="space-y-3">
-                    <input type="hidden" id="editIndex" value="-1">
+                    <input type="hidden" id="editBedNo" value="">
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block font-semibold mb-1">Bed Number *</label>
@@ -292,12 +257,10 @@
                             <input type="text" id="formBookingNo" class="w-full px-3 py-2 border rounded-lg">
                         </div>
                     </div>
-                    <!-- Remark Field Added -->
                     <div>
                         <label class="block font-semibold mb-1 text-rose-700">Remark (မှတ်ချက်)</label>
                         <input type="text" id="formRemark" placeholder="ဥပမာ - မီးပျက်နေသည် / ပြင်ဆင်နေသည်" class="w-full px-3 py-2 border border-rose-300 rounded-lg focus:outline-rose-600">
                     </div>
-                    <!-- Clear Form Fields Button -->
                     <div class="flex justify-between items-center pt-4 border-t">
                         <button type="button" onclick="clearModalFields()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-lg text-xs font-semibold transition flex items-center gap-1">
                             🧹 Clear All Fields
@@ -320,7 +283,7 @@
                 <button onclick="closeMoveModal()" class="text-white">✕</button>
             </div>
             <div class="p-6 space-y-4 text-sm">
-                <input type="hidden" id="moveSourceIndex" value="-1">
+                <input type="hidden" id="moveSourceBedNo" value="">
                 <div>
                     <p class="text-slate-600 mb-1">လက်ရှိ အခန်း/ဧည့်သည် -</p>
                     <p id="moveSourceInfo" class="font-bold text-indigo-900 bg-indigo-50 p-3 rounded-lg border border-indigo-100"></p>
@@ -338,6 +301,11 @@
     </div>
 
     <script>
+        // Supabase Credentials
+        const SUPABASE_URL = "sb_publishable_zXBcJ-fbTi-74ElvOkmB7w_fX9QyUEX";
+        const SUPABASE_ANON_KEY = "YOUR_SUeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZ255Ym52dW90YWhjbG1pbmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDczMzYsImV4cCI6MjEwNDI4MzMzNn0.tDyOSumcS-4s5FqtVuAqf_o_BQtCyS_iW3oKpP8mP4UPABASE_ANON_KEY";
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let roomsData = [];
 
         function generateAllBeds() {
@@ -352,16 +320,16 @@
                 for (let i = 1; i <= 60; i++) {
                     const bedNo = prefix + String(i).padStart(2, '0');
                     beds.push({
-                        bedNumber: bedNo,
+                        bed_number: bedNo,
                         building: building,
                         floor: floor,
-                        bedType: isFemaleDorm ? "1 capsule (Female Dorm)" : "1 capsule (Mix Dorm)",
+                        bed_type: isFemaleDorm ? "1 capsule (Female Dorm)" : "1 capsule (Mix Dorm)",
                         status: "Available",
-                        guestName: "",
-                        checkIn: "",
-                        checkOut: "",
+                        guest_name: "",
+                        check_in: "",
+                        check_out: "",
                         ota: "",
-                        bookingNo: "",
+                        booking_no: "",
                         remark: ""
                     });
                 }
@@ -369,63 +337,40 @@
             return beds;
         }
 
-        // ည ၁၂:၀၀ AM ကျော်သည်နှင့် Check Out ပြောင်းပေးရန် စစ်ဆေးသည့် Function
-        function checkAutoCheckout() {
-            const todayStr = new Date().toISOString().split('T')[0];
-            let hasChanged = false;
+        async function fetchRooms() {
+            const { data, error } = await supabase.from('rooms').select('*').order('bed_number', { ascending: true });
+            if (error) {
+                console.error("Fetch Error:", error);
+                document.getElementById("saveStatus").innerText = "🔴 Cloud Disconnected";
+                return;
+            }
 
-            roomsData.forEach(room => {
-                if (room.status === "In House" && room.checkOut && room.checkOut <= todayStr) {
-                    room.status = "Check Out";
-                    hasChanged = true;
-                }
-            });
-
-            if (hasChanged) {
-                syncToCloud();
+            if (!data || data.length === 0) {
+                await resetToDefaultData();
+            } else {
+                roomsData = data;
+                checkAutoCheckout();
+                filterData();
+                updateDashboard();
+                document.getElementById("saveStatus").innerText = "🟢 Supabase Live Active";
             }
         }
 
-        // Firebase Cloud Real-time Listener
         function initRealtimeSync() {
-            const checkFirebase = setInterval(() => {
-                if (window.firebaseDB) {
-                    clearInterval(checkFirebase);
-                    const roomDocRef = window.doc(window.firebaseDB, "hotel", "rooms_data");
-                    
-                    window.onSnapshot(roomDocRef, (snapshot) => {
-                        if (snapshot.exists()) {
-                            roomsData = snapshot.data().list || [];
-                            
-                            roomsData.forEach(r => {
-                                if (r.bedNumber.startsWith("E")) {
-                                    r.bedType = "1 capsule (Female Dorm)";
-                                } else if (r.bedNumber.startsWith("M")) {
-                                    r.bedType = "1 capsule (Mix Dorm)";
-                                }
-                            });
-
-                            checkAutoCheckout(); // Data ရောက်လာသည်နှင့် အလိုအလျောက် စစ်ဆေးမည်
-                            filterData(); 
-                            updateDashboard();
-                            document.getElementById("saveStatus").innerText = "🟢 Live Auto-Sync Active";
-                        } else {
-                            const defaultBeds = generateAllBeds();
-                            window.setDoc(roomDocRef, { list: defaultBeds });
-                        }
-                    }, (error) => {
-                        console.error("Sync Error:", error);
-                        document.getElementById("saveStatus").innerText = "🔴 Cloud Disconnected";
-                    });
-                }
-            }, 300);
+            fetchRooms();
+            supabase.channel('custom-all-channel')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, payload => {
+                    fetchRooms();
+                })
+                .subscribe();
         }
 
-        async function syncToCloud() {
-            if (window.firebaseDB) {
-                document.getElementById("saveStatus").innerText = "🟡 Syncing...";
-                const roomDocRef = window.doc(window.firebaseDB, "hotel", "rooms_data");
-                await window.setDoc(roomDocRef, { list: roomsData });
+        async function checkAutoCheckout() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const expiredRooms = roomsData.filter(r => r.status === "In House" && r.check_out && r.check_out <= todayStr);
+
+            for (const room of expiredRooms) {
+                await supabase.from('rooms').update({ status: 'Check Out' }).eq('bed_number', room.bed_number);
             }
         }
 
@@ -434,7 +379,6 @@
             tbody.innerHTML = "";
 
             data.forEach((room) => {
-                const originalIndex = roomsData.findIndex(r => r.bedNumber === room.bedNumber);
                 let statusClass = "status-available";
                 if (room.status === "In House") statusClass = "status-in-house";
                 if (room.status === "Check Out") statusClass = "status-check-out";
@@ -446,27 +390,27 @@
                 const tr = document.createElement("tr");
                 tr.className = "hover:bg-slate-50 border-b border-slate-100";
                 tr.innerHTML = `
-                    <td class="py-3 px-4 ${bedStyle}">${room.bedNumber}</td>
+                    <td class="py-3 px-4 ${bedStyle}">${room.bed_number}</td>
                     <td class="py-3 px-4">Bldg ${room.building} - Fl ${room.floor}</td>
-                    <td class="py-3 px-4 text-xs font-semibold ${room.bedNumber.startsWith('E') ? 'text-pink-600' : 'text-indigo-600'}">${room.bedType}</td>
+                    <td class="py-3 px-4 text-xs font-semibold ${room.bed_number.startsWith('E') ? 'text-pink-600' : 'text-indigo-600'}">${room.bed_type}</td>
                     <td class="py-3 px-4"><span class="px-2.5 py-1 text-xs font-semibold rounded-full ${statusClass}">${room.status}</span></td>
-                    <td class="py-3 px-4 font-medium">${room.guestName || "-"}</td>
-                    <td class="py-3 px-4 text-xs">${room.checkIn || "-"}</td>
-                    <td class="py-3 px-4 text-xs font-semibold text-rose-600">${room.checkOut || "-"}</td>
+                    <td class="py-3 px-4 font-medium">${room.guest_name || "-"}</td>
+                    <td class="py-3 px-4 text-xs">${room.check_in || "-"}</td>
+                    <td class="py-3 px-4 text-xs font-semibold text-rose-600">${room.check_out || "-"}</td>
                     <td class="py-3 px-4 text-xs">${room.ota || "-"}</td>
-                    <td class="py-3 px-4 text-xs">${room.bookingNo || "-"}</td>
+                    <td class="py-3 px-4 text-xs">${room.booking_no || "-"}</td>
                     <td class="py-3 px-4 text-xs text-rose-600 font-semibold">${room.remark || "-"}</td>
                     <td class="py-3 px-4 text-center">
                         <div class="flex items-center justify-center space-x-1">
-                            <button onclick="editRoom(${originalIndex})" class="text-xs bg-slate-100 hover:bg-emerald-600 hover:text-white px-2 py-1 rounded transition" title="ပြင်ဆင်ရန်">
+                            <button onclick="editRoom('${room.bed_number}')" class="text-xs bg-slate-100 hover:bg-emerald-600 hover:text-white px-2 py-1 rounded transition" title="ပြင်ဆင်ရန်">
                                 ပြင်
                             </button>
                             ${isOccupied ? `
-                                <button onclick="openMoveModal(${originalIndex})" class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-600 hover:text-white px-2 py-1 rounded transition font-semibold" title="အခန်းပြောင်းရန်">
+                                <button onclick="openMoveModal('${room.bed_number}')" class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-600 hover:text-white px-2 py-1 rounded transition font-semibold" title="အခန်းပြောင်းရန်">
                                     Move
                                 </button>
                             ` : ''}
-                            <button onclick="deleteRoom(${originalIndex})" class="text-xs bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white px-2 py-1 rounded transition" title="ဖျက်ရန်">
+                            <button onclick="deleteRoom('${room.bed_number}')" class="text-xs bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white px-2 py-1 rounded transition" title="ဖျက်ရန်">
                                 ဖျက်
                             </button>
                         </div>
@@ -499,60 +443,89 @@
             document.getElementById("count-checkout").innerText = checkOut.length;
 
             document.getElementById("list-in-house").innerHTML = inHouse.length > 0 
-                ? inHouse.map(r => `<span class="inline-block bg-emerald-100 text-emerald-800 border border-emerald-200 rounded px-1.5 py-0.5 font-bold text-[11px]">${r.bedNumber}</span>`).join('')
+                ? inHouse.map(r => `<span class="inline-block bg-emerald-100 text-emerald-800 border border-emerald-200 rounded px-1.5 py-0.5 font-bold text-[11px]">${r.bed_number}</span>`).join('')
                 : `<div class="text-slate-400 italic text-xs">အခန်း မရှိပါ</div>`;
 
             document.getElementById("list-available").innerHTML = available.length > 0 
-                ? available.map(r => `<span class="inline-block bg-sky-100 text-sky-800 border border-sky-200 rounded px-1.5 py-0.5 font-bold text-[11px]">${r.bedNumber}</span>`).join('')
+                ? available.map(r => `<span class="inline-block bg-sky-100 text-sky-800 border border-sky-200 rounded px-1.5 py-0.5 font-bold text-[11px]">${r.bed_number}</span>`).join('')
                 : `<div class="text-slate-400 italic text-xs">အခန်း မရှိပါ</div>`;
 
             document.getElementById("list-checkout").innerHTML = checkOut.length > 0 
-                ? checkOut.map(r => `<span class="inline-block bg-amber-100 text-amber-800 border border-amber-200 rounded px-1.5 py-0.5 font-bold text-[11px]">${r.bedNumber}</span>`).join('')
+                ? checkOut.map(r => `<span class="inline-block bg-amber-100 text-amber-800 border border-amber-200 rounded px-1.5 py-0.5 font-bold text-[11px]">${r.bed_number}</span>`).join('')
                 : `<div class="text-slate-400 italic text-xs">အခန်း မရှိပါ</div>`;
         }
 
-        function exportToNotepad(mode = 'all') {
-            document.getElementById("exportDropdown").classList.add("hidden");
+        async function saveRoom(e) {
+            e.preventDefault();
+            const originalBedNo = document.getElementById("editBedNo").value;
+            const bedNo = document.getElementById("formBedNo").value.trim();
+            const isE = bedNo.startsWith("E");
             
-            const inHouse = roomsData.filter(r => r.status === "In House");
-            const checkOut = roomsData.filter(r => r.status === "Check Out");
-            const available = roomsData.filter(r => r.status === "Available");
+            const payload = {
+                bed_number: bedNo,
+                building: bedNo.charAt(0),
+                floor: bedNo.charAt(1),
+                bed_type: isE ? "1 capsule (Female Dorm)" : "1 capsule (Mix Dorm)",
+                status: document.getElementById("formStatus").value,
+                guest_name: document.getElementById("formGuestName").value.trim(),
+                check_in: document.getElementById("formCheckIn").value,
+                check_out: document.getElementById("formCheckOut").value,
+                ota: document.getElementById("formOTA").value,
+                booking_no: document.getElementById("formBookingNo").value.trim(),
+                remark: document.getElementById("formRemark").value.trim()
+            };
 
-            let text = "";
-
-            if (mode === 'inhouse_beds') {
-                text = inHouse.length > 0 ? inHouse.map(r => r.bedNumber).join(', ') : "No In-House Beds";
-            } 
-            else if (mode === 'checkout_beds') {
-                text = checkOut.length > 0 ? checkOut.map(r => r.bedNumber).join(', ') : "No Checked-Out Beds";
+            if (originalBedNo) {
+                await supabase.from('rooms').update(payload).eq('bed_number', originalBedNo);
+            } else {
+                await supabase.from('rooms').insert([payload]);
             }
-            else if (mode === 'all') {
-                text += `IN HOUSE BEDS (${inHouse.length}):\n${inHouse.map(r => r.bedNumber).join(', ') || 'None'}\n\n`;
-                text += `CHECK OUT BEDS (${checkOut.length}):\n${checkOut.map(r => r.bedNumber).join(', ') || 'None'}\n\n`;
-                text += `AVAILABLE BEDS (${available.length}):\n${available.map(r => r.bedNumber).join(', ') || 'None'}`;
-            }
 
-            const filename = `Beds_${mode}_${new Date().toISOString().slice(0,10)}.txt`;
-            downloadBlob(text, filename, 'text/plain;charset=utf-8');
+            closeModal();
+            fetchRooms();
         }
 
-        function openMoveModal(index) {
-            const sourceRoom = roomsData[index];
-            document.getElementById("moveSourceIndex").value = index;
-            document.getElementById("moveSourceInfo").innerText = `${sourceRoom.bedNumber} | ${sourceRoom.guestName || "Un-named"} (${sourceRoom.ota || "Direct"})`;
+        function editRoom(bedNo) {
+            const room = roomsData.find(r => r.bed_number === bedNo);
+            if (!room) return;
+
+            document.getElementById("editBedNo").value = room.bed_number;
+            document.getElementById("modalTitle").innerText = "အခန်း / Bed ပြင်ဆင်ရန်";
+            document.getElementById("formBedNo").value = room.bed_number;
+            document.getElementById("formStatus").value = room.status;
+            document.getElementById("formGuestName").value = room.guest_name || "";
+            document.getElementById("formCheckIn").value = room.check_in || "";
+            document.getElementById("formCheckOut").value = room.check_out || "";
+            document.getElementById("formOTA").value = room.ota || "";
+            document.getElementById("formBookingNo").value = room.booking_no || "";
+            document.getElementById("formRemark").value = room.remark || "";
+            document.getElementById("roomModal").classList.remove("hidden");
+        }
+
+        async function deleteRoom(bedNo) {
+            if (confirm(`အခန်း/Bed No [ ${bedNo} ] ကို စနစ်ထဲမှ လုံးဝဖျက်ထုတ်ရန် သေချာပါသလား?`)) {
+                await supabase.from('rooms').delete().eq('bed_number', bedNo);
+                fetchRooms();
+            }
+        }
+
+        function openMoveModal(bedNo) {
+            const sourceRoom = roomsData.find(r => r.bed_number === bedNo);
+            document.getElementById("moveSourceBedNo").value = bedNo;
+            document.getElementById("moveSourceInfo").innerText = `${sourceRoom.bed_number} | ${sourceRoom.guest_name || "Un-named"} (${sourceRoom.ota || "Direct"})`;
 
             const targetSelect = document.getElementById("targetBedSelect");
             targetSelect.innerHTML = "";
 
-            const availableRooms = roomsData.filter((r, i) => r.status === "Available" && i !== index);
+            const availableRooms = roomsData.filter(r => r.status === "Available" && r.bed_number !== bedNo);
 
             if (availableRooms.length === 0) {
                 targetSelect.innerHTML = `<option value="">လွတ်နေသော အခန်း မရှိပါ</option>`;
             } else {
                 availableRooms.forEach(room => {
                     const opt = document.createElement("option");
-                    opt.value = room.bedNumber;
-                    opt.innerText = `${room.bedNumber} - ${room.bedType} (Floor ${room.floor})`;
+                    opt.value = room.bed_number;
+                    opt.innerText = `${room.bed_number} - ${room.bed_type} (Floor ${room.floor})`;
                     targetSelect.appendChild(opt);
                 });
             }
@@ -560,12 +533,8 @@
             document.getElementById("moveModal").classList.remove("hidden");
         }
 
-        function closeMoveModal() {
-            document.getElementById("moveModal").classList.add("hidden");
-        }
-
         async function confirmRoomMove() {
-            const sourceIndex = parseInt(document.getElementById("moveSourceIndex").value);
+            const sourceBedNo = document.getElementById("moveSourceBedNo").value;
             const targetBedNo = document.getElementById("targetBedSelect").value;
 
             if (!targetBedNo) {
@@ -573,56 +542,50 @@
                 return;
             }
 
-            const targetIndex = roomsData.findIndex(r => r.bedNumber === targetBedNo);
+            const source = roomsData.find(r => r.bed_number === sourceBedNo);
 
-            if (sourceIndex >= 0 && targetIndex >= 0) {
-                const source = roomsData[sourceIndex];
+            await supabase.from('rooms').update({
+                status: "In House",
+                guest_name: source.guest_name,
+                check_in: source.check_in,
+                check_out: source.check_out,
+                ota: source.ota,
+                booking_no: source.booking_no,
+                remark: source.remark
+            }).eq('bed_number', targetBedNo);
 
-                roomsData[targetIndex].status = "In House";
-                roomsData[targetIndex].guestName = source.guestName;
-                roomsData[targetIndex].checkIn = source.checkIn;
-                roomsData[targetIndex].checkOut = source.checkOut;
-                roomsData[targetIndex].ota = source.ota;
-                roomsData[targetIndex].bookingNo = source.bookingNo;
-                roomsData[targetIndex].remark = source.remark;
+            await supabase.from('rooms').update({
+                status: "Available",
+                guest_name: "",
+                check_in: "",
+                check_out: "",
+                ota: "",
+                booking_no: "",
+                remark: ""
+            }).eq('bed_number', sourceBedNo);
 
-                roomsData[sourceIndex].status = "Available";
-                roomsData[sourceIndex].guestName = "";
-                roomsData[sourceIndex].checkIn = "";
-                roomsData[sourceIndex].checkOut = "";
-                roomsData[sourceIndex].ota = "";
-                roomsData[sourceIndex].bookingNo = "";
-                roomsData[sourceIndex].remark = "";
+            closeMoveModal();
+            fetchRooms();
+        }
 
-                closeMoveModal();
-                await syncToCloud();
+        async function resetToDefaultData() {
+            if (confirm("အခန်း ၄၈၀ လုံး၏ Data များကို မူလအတိုင်း ပြန်လည် Reset ပြုလုပ်မှာ သေချာပါသလား?")) {
+                await supabase.from('rooms').delete().neq('bed_number', 'keep_table_structure');
+                const defaultBeds = generateAllBeds();
+                await supabase.from('rooms').insert(defaultBeds);
+                fetchRooms();
             }
         }
 
-        async function deleteRoom(index) {
-            const room = roomsData[index];
-            if (confirm(`အခန်း/Bed No [ ${room.bedNumber} ] ကို စနစ်ထဲမှ လုံးဝဖျက်ထုတ်ရန် သေချာပါသလား?`)) {
-                roomsData.splice(index, 1);
-                await syncToCloud();
-            }
-        }
-
-        function editRoom(index) {
-            const room = roomsData[index];
-            document.getElementById("editIndex").value = index;
-            document.getElementById("modalTitle").innerText = "အခန်း / Bed ပြင်ဆင်ရန်";
-            document.getElementById("formBedNo").value = room.bedNumber;
-            document.getElementById("formStatus").value = room.status;
-            document.getElementById("formGuestName").value = room.guestName || "";
-            document.getElementById("formCheckIn").value = room.checkIn || "";
-            document.getElementById("formCheckOut").value = room.checkOut || "";
-            document.getElementById("formOTA").value = room.ota || "";
-            document.getElementById("formBookingNo").value = room.bookingNo || "";
-            document.getElementById("formRemark").value = room.remark || "";
+        function closeModal() { document.getElementById("roomModal").classList.add("hidden"); }
+        function closeMoveModal() { document.getElementById("moveModal").classList.add("hidden"); }
+        function openAddModal() {
+            document.getElementById("editBedNo").value = "";
+            document.getElementById("modalTitle").innerText = "အခန်းသစ် ထည့်သွင်းရန်";
+            document.getElementById("roomForm").reset();
             document.getElementById("roomModal").classList.remove("hidden");
         }
 
-        // Function to clear all fields in the edit modal
         function clearModalFields() {
             document.getElementById("formStatus").value = "Available";
             document.getElementById("formGuestName").value = "";
@@ -633,47 +596,6 @@
             document.getElementById("formRemark").value = "";
         }
 
-        async function saveRoom(e) {
-            e.preventDefault();
-            const index = parseInt(document.getElementById("editIndex").value);
-            const bedNo = document.getElementById("formBedNo").value.trim();
-            const isE = bedNo.startsWith("E");
-            
-            const updatedRoom = {
-                bedNumber: bedNo,
-                building: bedNo.charAt(0),
-                floor: bedNo.charAt(1),
-                bedType: isE ? "1 capsule (Female Dorm)" : "1 capsule (Mix Dorm)",
-                status: document.getElementById("formStatus").value,
-                guestName: document.getElementById("formGuestName").value.trim(),
-                checkIn: document.getElementById("formCheckIn").value,
-                checkOut: document.getElementById("formCheckOut").value,
-                ota: document.getElementById("formOTA").value,
-                bookingNo: document.getElementById("formBookingNo").value.trim(),
-                remark: document.getElementById("formRemark").value.trim()
-            };
-
-            if (index >= 0) {
-                roomsData[index] = updatedRoom;
-            } else {
-                roomsData.push(updatedRoom);
-            }
-
-            closeModal();
-            await syncToCloud();
-        }
-
-        function closeModal() {
-            document.getElementById("roomModal").classList.add("hidden");
-        }
-
-        function openAddModal() {
-            document.getElementById("editIndex").value = -1;
-            document.getElementById("modalTitle").innerText = "အခန်းသစ် ထည့်သွင်းရန်";
-            document.getElementById("roomForm").reset();
-            document.getElementById("roomModal").classList.remove("hidden");
-        }
-
         function filterData() {
             const search = document.getElementById("searchInput").value.toLowerCase();
             const status = document.getElementById("statusFilter").value;
@@ -682,17 +604,17 @@
             const checkoutDate = document.getElementById("checkoutDateFilter").value;
 
             const filtered = roomsData.filter(r => {
-                const matchSearch = r.bedNumber.toLowerCase().includes(search) || 
-                                    r.guestName.toLowerCase().includes(search) || 
-                                    r.bookingNo.toLowerCase().includes(search) ||
+                const matchSearch = r.bed_number.toLowerCase().includes(search) || 
+                                    (r.guest_name && r.guest_name.toLowerCase().includes(search)) || 
+                                    (r.booking_no && r.booking_no.toLowerCase().includes(search)) ||
                                     (r.remark && r.remark.toLowerCase().includes(search));
                 const matchStatus = !status || r.status === status;
-                const matchType = !type || r.bedType.includes(type);
+                const matchType = !type || r.bed_type.includes(type);
                 const matchOTA = !ota || r.ota === ota;
                 
                 let matchCheckoutDate = true;
                 if (checkoutDate) {
-                    matchCheckoutDate = r.checkOut && (r.checkOut <= checkoutDate);
+                    matchCheckoutDate = r.check_out && (r.check_out <= checkoutDate);
                 }
 
                 return matchSearch && matchStatus && matchType && matchOTA && matchCheckoutDate;
@@ -701,16 +623,8 @@
             renderTable(filtered);
         }
 
-        function clearFilter(id) {
-            document.getElementById(id).value = "";
-            filterData();
-        }
-
-        function clearCheckoutDate() {
-            document.getElementById("checkoutDateFilter").value = "";
-            filterData();
-        }
-
+        function clearFilter(id) { document.getElementById(id).value = ""; filterData(); }
+        function clearCheckoutDate() { document.getElementById("checkoutDateFilter").value = ""; filterData(); }
         function clearAllFilters() {
             document.getElementById("searchInput").value = "";
             document.getElementById("statusFilter").value = "";
@@ -720,37 +634,42 @@
             filterData();
         }
 
-        async function resetToDefaultData() {
-            if (confirm("အခန်း ၄၈၀ လုံး၏ Data များကို မူလအတိုင်း ပြန်လည် Reset ပြုလုပ်မှာ သေချာပါသလား?")) {
-                roomsData = generateAllBeds();
-                await syncToCloud();
-            }
-        }
+        function toggleExportMenu() { document.getElementById("exportDropdown").classList.toggle("hidden"); }
 
-        function toggleExportMenu() {
-            document.getElementById("exportDropdown").classList.toggle("hidden");
+        function exportToNotepad(mode = 'all') {
+            document.getElementById("exportDropdown").classList.add("hidden");
+            const inHouse = roomsData.filter(r => r.status === "In House");
+            const checkOut = roomsData.filter(r => r.status === "Check Out");
+            const available = roomsData.filter(r => r.status === "Available");
+
+            let text = "";
+            if (mode === 'inhouse_beds') text = inHouse.length > 0 ? inHouse.map(r => r.bed_number).join(', ') : "No In-House Beds";
+            else if (mode === 'checkout_beds') text = checkOut.length > 0 ? checkOut.map(r => r.bed_number).join(', ') : "No Checked-Out Beds";
+            else if (mode === 'all') {
+                text += `IN HOUSE BEDS (${inHouse.length}):\n${inHouse.map(r => r.bed_number).join(', ') || 'None'}\n\n`;
+                text += `CHECK OUT BEDS (${checkOut.length}):\n${checkOut.map(r => r.bed_number).join(', ') || 'None'}\n\n`;
+                text += `AVAILABLE BEDS (${available.length}):\n${available.map(r => r.bed_number).join(', ') || 'None'}`;
+            }
+
+            downloadBlob(text, `Beds_${mode}_${new Date().toISOString().slice(0,10)}.txt`, 'text/plain;charset=utf-8');
         }
 
         function exportData(type) {
             document.getElementById("exportDropdown").classList.add("hidden");
-            
             if (type === 'excel') {
                 const worksheet = XLSX.utils.json_to_sheet(roomsData);
                 const workbook = XLSX.utils.book_new();
                 XLSX.utils.book_append_sheet(workbook, worksheet, "Rooms");
                 XLSX.writeFile(workbook, "Green_Group_Hotel_Rooms.xlsx");
-            } 
-            else if (type === 'csv') {
+            } else if (type === 'csv') {
                 const csv = Papa.unparse(roomsData);
                 downloadBlob(csv, 'Green_Group_Hotel_Rooms.csv', 'text/csv;charset=utf-8;');
-            } 
-            else if (type === 'word') {
+            } else if (type === 'word') {
                 let htmlContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
                 <head><title>Room Report</title><style>table {border-collapse: collapse; width: 100%;} th, td {border: 1px solid black; padding: 8px; text-align: left;}</style></head>
                 <body><h2>Green Group Hotel - Room Report</h2>${document.getElementById("mainTable").outerHTML}</body></html>`;
                 downloadBlob(htmlContent, 'Green_Group_Hotel_Report.doc', 'application/msword');
-            } 
-            else if (type === 'html') {
+            } else if (type === 'html') {
                 let htmlContent = `<!DOCTYPE html><html><head><title>Room Report</title><style>table {border-collapse: collapse; width: 100%;} th, td {border: 1px solid #ccc; padding: 8px;} th {background-color: #047857; color: white;}</style></head>
                 <body><h2>Green Group Hotel Report</h2>${document.getElementById("mainTable").outerHTML}</body></html>`;
                 downloadBlob(htmlContent, 'Green_Group_Hotel_Report.html', 'text/html');
@@ -769,7 +688,6 @@
 
         window.onload = () => {
             initRealtimeSync();
-            // ၁ မိနစ်လျှင် တစ်ကြိမ် ည ၁၂:၀၀ AM / ရက်စွဲကျော်လွန်မှု ရှိမရှိ စစ်ဆေးပေးမည်
             setInterval(checkAutoCheckout, 60000);
         };
     </script>
