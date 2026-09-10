@@ -68,23 +68,23 @@
         <!-- Dashboard Stats -->
         <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                <p class="text-xs font-semibold text-slate-500 uppercase">စုစုပေါင်း Bed/Room</p>
+                <p class="text-xs font-semibold text-slate-500 uppercase">စုစုပေါင်း BED/ROOM</p>
                 <p id="stat-total" class="text-2xl font-bold text-slate-800 mt-1">0</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-emerald-100 bg-emerald-50/30">
-                <p class="text-xs font-semibold text-emerald-600 uppercase">In House (တည်းခိုနေဆဲ)</p>
+                <p class="text-xs font-semibold text-emerald-600 uppercase">IN HOUSE (တည်းခိုနေဆဲ)</p>
                 <p id="stat-in-house" class="text-2xl font-bold text-emerald-700 mt-1">0</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-sky-100 bg-sky-50/30">
-                <p class="text-xs font-semibold text-sky-600 uppercase">Available (လွတ်နေသော)</p>
+                <p class="text-xs font-semibold text-sky-600 uppercase">AVAILABLE (လွတ်နေသော)</p>
                 <p id="stat-available" class="text-2xl font-bold text-sky-700 mt-1">0</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-amber-100 bg-amber-50/30">
-                <p class="text-xs font-semibold text-amber-600 uppercase">Check Out ပြီး</p>
+                <p class="text-xs font-semibold text-amber-600 uppercase">CHECK OUT ပြီး</p>
                 <p id="stat-checkout" class="text-2xl font-bold text-amber-700 mt-1">0</p>
             </div>
             <div class="bg-white p-4 rounded-xl shadow-sm border border-indigo-100 bg-indigo-50/30">
-                <p class="text-xs font-semibold text-indigo-600 uppercase">Occupancy Rate</p>
+                <p class="text-xs font-semibold text-indigo-600 uppercase">OCCUPANCY RATE</p>
                 <p id="stat-rate" class="text-2xl font-bold text-indigo-700 mt-1">0%</p>
             </div>
         </div>
@@ -183,17 +183,17 @@
                 <table class="w-full text-left text-sm text-slate-600" id="mainTable">
                     <thead class="bg-slate-100 text-slate-700 font-semibold border-b uppercase text-xs">
                         <tr>
-                            <th class="py-3 px-4">Bed Number</th>
-                            <th class="py-3 px-4">Building / Floor</th>
-                            <th class="py-3 px-4">Bed Type</th>
-                            <th class="py-3 px-4">Status</th>
-                            <th class="py-3 px-4">Guest Name</th>
-                            <th class="py-3 px-4">Check In</th>
-                            <th class="py-3 px-4">Check Out</th>
-                            <th class="py-3 px-4">OTA Channel</th>
-                            <th class="py-3 px-4">Booking No</th>
-                            <th class="py-3 px-4">Remark</th>
-                            <th class="py-3 px-4 text-center">Action</th>
+                            <th class="py-3 px-4">BED NUMBER</th>
+                            <th class="py-3 px-4">BUILDING / FLOOR</th>
+                            <th class="py-3 px-4">BED TYPE</th>
+                            <th class="py-3 px-4">STATUS</th>
+                            <th class="py-3 px-4">GUEST NAME</th>
+                            <th class="py-3 px-4">CHECK IN</th>
+                            <th class="py-3 px-4">CHECK OUT</th>
+                            <th class="py-3 px-4">OTA CHANNEL</th>
+                            <th class="py-3 px-4">BOOKING NO</th>
+                            <th class="py-3 px-4">REMARK</th>
+                            <th class="py-3 px-4 text-center">ACTION</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody" class="divide-y divide-slate-100"></tbody>
@@ -326,11 +326,11 @@
     </div>
 
     <script>
-        // Supabase Credentials
+        // Supabase Credentials (ဤနေရာတွင် သင့် Supabase Dashboard မှ ရရှိသော အချက်အလက်များ ထည့်ပါ)
         const SUPABASE_URL = "https://tbgnybnvuotahclmingf.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZ255Ym52dW90YWhjbG1pbmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDczMzYsImV4cCI6MjEwNDI4MzMzNn0.tDyOSumcS-4s5FqtVuAqf_o_BQtCyS_iW3oKpP8mP4U";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
         
-        // Fix for redeclaration error: Use 'var' instead of 'const' for supabase instance
+        // Fix DB Variable Name
         var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let roomsData = [];
 
@@ -364,21 +364,27 @@
         }
 
         async function fetchRooms() {
-            const { data, error } = await db.from('rooms').select('*').order('bed_number', { ascending: true });
-            if (error) {
-                console.error("Fetch Error:", error);
-                document.getElementById("saveStatus").innerText = "🔴 Cloud Disconnected";
-                return;
-            }
+            try {
+                const { data, error } = await db.from('rooms').select('*').order('bed_number', { ascending: true });
+                if (error) {
+                    console.error("Fetch Error:", error);
+                    document.getElementById("saveStatus").innerText = "🔴 Supabase Disconnected (Key Error)";
+                    return;
+                }
 
-            if (!data || data.length === 0) {
-                await resetToDefaultData();
-            } else {
-                roomsData = data;
-                checkAutoCheckout();
-                filterData();
-                updateDashboard();
-                document.getElementById("saveStatus").innerText = "🟢 Supabase Live Active";
+                if (!data || data.length === 0) {
+                    // Database ထဲမှာ Data မရှိသေးရင် မူလ Default Bed များကို ထည့်ပေးမည်
+                    await resetToDefaultData();
+                } else {
+                    roomsData = data;
+                    checkAutoCheckout();
+                    filterData();
+                    updateDashboard();
+                    document.getElementById("saveStatus").innerText = "🟢 Supabase Live Active";
+                }
+            } catch (err) {
+                console.error("Connection error:", err);
+                document.getElementById("saveStatus").innerText = "🔴 Connection Failed";
             }
         }
 
@@ -447,7 +453,9 @@
                 `;
                 tbody.appendChild(tr);
             });
-            lucide.createIcons();
+            if (window.lucide) {
+                lucide.createIcons();
+            }
         }
 
         function updateDashboard() {
@@ -633,7 +641,6 @@
             const source = roomsData.find(r => r.bed_number === sourceBedNo);
             const target = roomsData.find(r => r.bed_number === targetBedNo);
 
-            // Swap Source to Target Data
             await db.from('rooms').update({
                 status: source.status,
                 guest_name: source.guest_name,
@@ -644,7 +651,6 @@
                 remark: source.remark
             }).eq('bed_number', targetBedNo);
 
-            // Swap Target to Source Data
             await db.from('rooms').update({
                 status: target.status,
                 guest_name: target.guest_name,
@@ -696,12 +702,12 @@
             const checkoutDate = document.getElementById("checkoutDateFilter").value;
 
             const filtered = roomsData.filter(r => {
-                const matchSearch = r.bed_number.toLowerCase().includes(search) || 
+                const matchSearch = (r.bed_number && r.bed_number.toLowerCase().includes(search)) || 
                                     (r.guest_name && r.guest_name.toLowerCase().includes(search)) || 
                                     (r.booking_no && r.booking_no.toLowerCase().includes(search)) ||
                                     (r.remark && r.remark.toLowerCase().includes(search));
                 const matchStatus = !status || r.status === status;
-                const matchType = !type || r.bed_type.includes(type);
+                const matchType = !type || (r.bed_type && r.bed_type.includes(type));
                 const matchOTA = !ota || r.ota === ota;
                 
                 let matchCheckoutDate = true;
