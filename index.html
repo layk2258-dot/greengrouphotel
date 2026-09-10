@@ -300,13 +300,38 @@
         </div>
     </div>
 
+    <!-- Room Swap Modal -->
+    <div id="swapModal" class="fixed inset-0 bg-slate-900/50 hidden flex justify-center items-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div class="bg-purple-800 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-lg">ဧည့်သည် အခန်းချင်း လဲလှယ်ရန် (Room Swap)</h3>
+                <button onclick="closeSwapModal()" class="text-white">✕</button>
+            </div>
+            <div class="p-6 space-y-4 text-sm">
+                <input type="hidden" id="swapSourceBedNo" value="">
+                <div>
+                    <p class="text-slate-600 mb-1">ပထမ အခန်း/ဧည့်သည် -</p>
+                    <p id="swapSourceInfo" class="font-bold text-purple-900 bg-purple-50 p-3 rounded-lg border border-purple-100"></p>
+                </div>
+                <div>
+                    <label class="block font-semibold mb-1">လဲလှယ်လိုသည့် ဒုတိယ အခန်း (Target Bed) *</label>
+                    <select id="targetSwapBedSelect" class="w-full px-3 py-2 border rounded-lg font-bold text-slate-700"></select>
+                </div>
+                <div class="flex justify-end space-x-2 pt-4 border-t">
+                    <button type="button" onclick="closeSwapModal()" class="px-4 py-2 border rounded-lg">မလုပ်တော့ပါ</button>
+                    <button type="button" id="swapConfirmBtn" onclick="confirmRoomSwap()" class="px-4 py-2 bg-purple-700 text-white rounded-lg font-semibold hover:bg-purple-800">လဲလှယ်မည် (Confirm Swap)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Supabase Credentials
-        // ⚠️ Base URL သာ ထည့်သွင်းရပါမည် (/rest/v1 မပါရပါ)
         const SUPABASE_URL = "https://tbgnybnvuotahclmingf.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZ255Ym52dW90YWhjbG1pbmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDczMzYsImV4cCI6MjEwNDI4MzMzNn0.tDyOSumcS-4s5FqtVuAqf_o_BQtCyS_iW3oKpP8mP4U"; // သင့် Publishable Key ကို ပြန်ထည့်ပါ
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZ255Ym52dW90YWhjbG1pbmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDczMzYsImV4cCI6MjEwNDI4MzMzNn0.tDyOSumcS-4s5FqtVuAqf_o_BQtCyS_iW3oKpP8mP4U";
         
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Fix for redeclaration error: Use 'var' instead of 'const' for supabase instance
+        var db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let roomsData = [];
 
         function generateAllBeds() {
@@ -339,7 +364,7 @@
         }
 
         async function fetchRooms() {
-            const { data, error } = await supabase.from('rooms').select('*').order('bed_number', { ascending: true });
+            const { data, error } = await db.from('rooms').select('*').order('bed_number', { ascending: true });
             if (error) {
                 console.error("Fetch Error:", error);
                 document.getElementById("saveStatus").innerText = "🔴 Cloud Disconnected";
@@ -359,7 +384,7 @@
 
         function initRealtimeSync() {
             fetchRooms();
-            supabase.channel('custom-all-channel')
+            db.channel('custom-all-channel')
                 .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, payload => {
                     fetchRooms();
                 })
@@ -371,7 +396,7 @@
             const expiredRooms = roomsData.filter(r => r.status === "In House" && r.check_out && r.check_out <= todayStr);
 
             for (const room of expiredRooms) {
-                await supabase.from('rooms').update({ status: 'Check Out' }).eq('bed_number', room.bed_number);
+                await db.from('rooms').update({ status: 'Check Out' }).eq('bed_number', room.bed_number);
             }
         }
 
@@ -411,6 +436,9 @@
                                     Move
                                 </button>
                             ` : ''}
+                            <button onclick="openSwapModal('${room.bed_number}')" class="text-xs bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-600 hover:text-white px-2 py-1 rounded transition font-semibold" title="အခန်းချင်းလဲရန်">
+                                Swap
+                            </button>
                             <button onclick="deleteRoom('${room.bed_number}')" class="text-xs bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white px-2 py-1 rounded transition" title="ဖျက်ရန်">
                                 ဖျက်
                             </button>
@@ -477,9 +505,9 @@
             };
 
             if (originalBedNo) {
-                await supabase.from('rooms').update(payload).eq('bed_number', originalBedNo);
+                await db.from('rooms').update(payload).eq('bed_number', originalBedNo);
             } else {
-                await supabase.from('rooms').insert([payload]);
+                await db.from('rooms').insert([payload]);
             }
 
             closeModal();
@@ -505,7 +533,7 @@
 
         async function deleteRoom(bedNo) {
             if (confirm(`အခန်း/Bed No [ ${bedNo} ] ကို စနစ်ထဲမှ လုံးဝဖျက်ထုတ်ရန် သေချာပါသလား?`)) {
-                await supabase.from('rooms').delete().eq('bed_number', bedNo);
+                await db.from('rooms').delete().eq('bed_number', bedNo);
                 fetchRooms();
             }
         }
@@ -545,7 +573,7 @@
 
             const source = roomsData.find(r => r.bed_number === sourceBedNo);
 
-            await supabase.from('rooms').update({
+            await db.from('rooms').update({
                 status: "In House",
                 guest_name: source.guest_name,
                 check_in: source.check_in,
@@ -555,7 +583,7 @@
                 remark: source.remark
             }).eq('bed_number', targetBedNo);
 
-            await supabase.from('rooms').update({
+            await db.from('rooms').update({
                 status: "Available",
                 guest_name: "",
                 check_in: "",
@@ -569,17 +597,80 @@
             fetchRooms();
         }
 
+        function openSwapModal(bedNo) {
+            const sourceRoom = roomsData.find(r => r.bed_number === bedNo);
+            document.getElementById("swapSourceBedNo").value = bedNo;
+            document.getElementById("swapSourceInfo").innerText = `${sourceRoom.bed_number} | ${sourceRoom.guest_name || "Un-named"} [${sourceRoom.status}]`;
+
+            const targetSelect = document.getElementById("targetSwapBedSelect");
+            targetSelect.innerHTML = "";
+
+            const targetRooms = roomsData.filter(r => r.bed_number !== bedNo);
+
+            if (targetRooms.length === 0) {
+                targetSelect.innerHTML = `<option value="">လဲလှယ်ရန် အခန်း မရှိပါ</option>`;
+            } else {
+                targetRooms.forEach(room => {
+                    const opt = document.createElement("option");
+                    opt.value = room.bed_number;
+                    opt.innerText = `${room.bed_number} - ${room.guest_name ? room.guest_name : 'No Guest'} (${room.status})`;
+                    targetSelect.appendChild(opt);
+                });
+            }
+
+            document.getElementById("swapModal").classList.remove("hidden");
+        }
+
+        async function confirmRoomSwap() {
+            const sourceBedNo = document.getElementById("swapSourceBedNo").value;
+            const targetBedNo = document.getElementById("targetSwapBedSelect").value;
+
+            if (!targetBedNo) {
+                alert("ကျေးဇူးပြု၍ လဲလှယ်လိုသည့် အခန်းကို ရွေးချယ်ပေးပါ");
+                return;
+            }
+
+            const source = roomsData.find(r => r.bed_number === sourceBedNo);
+            const target = roomsData.find(r => r.bed_number === targetBedNo);
+
+            // Swap Source to Target Data
+            await db.from('rooms').update({
+                status: source.status,
+                guest_name: source.guest_name,
+                check_in: source.check_in,
+                check_out: source.check_out,
+                ota: source.ota,
+                booking_no: source.booking_no,
+                remark: source.remark
+            }).eq('bed_number', targetBedNo);
+
+            // Swap Target to Source Data
+            await db.from('rooms').update({
+                status: target.status,
+                guest_name: target.guest_name,
+                check_in: target.check_in,
+                check_out: target.check_out,
+                ota: target.ota,
+                booking_no: target.booking_no,
+                remark: target.remark
+            }).eq('bed_number', sourceBedNo);
+
+            closeSwapModal();
+            fetchRooms();
+        }
+
         async function resetToDefaultData() {
             if (confirm("အခန်း ၄၈၀ လုံး၏ Data များကို မူလအတိုင်း ပြန်လည် Reset ပြုလုပ်မှာ သေချာပါသလား?")) {
-                await supabase.from('rooms').delete().neq('bed_number', 'keep_table_structure');
+                await db.from('rooms').delete().neq('bed_number', 'keep_table_structure');
                 const defaultBeds = generateAllBeds();
-                await supabase.from('rooms').insert(defaultBeds);
+                await db.from('rooms').insert(defaultBeds);
                 fetchRooms();
             }
         }
 
         function closeModal() { document.getElementById("roomModal").classList.add("hidden"); }
         function closeMoveModal() { document.getElementById("moveModal").classList.add("hidden"); }
+        function closeSwapModal() { document.getElementById("swapModal").classList.add("hidden"); }
         function openAddModal() {
             document.getElementById("editBedNo").value = "";
             document.getElementById("modalTitle").innerText = "အခန်းသစ် ထည့်သွင်းရန်";
