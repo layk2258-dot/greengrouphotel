@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green Group - Hotel Room Management System</title>
+    <title>Green Group - Hotel Room Management System (Supabase)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
     <!-- Supabase JS Client Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -300,7 +301,7 @@
     </div>
 
     <script>
-        // Supabase Credentials
+        // Supabase Credentials (URL စာလုံးပေါင်းအမှန်နှင့် Anon Key ထည့်ပြီး)
         const SUPABASE_URL = "https://tbgnybnvuotahclmingf.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZ255Ym52dW90YWhjbG1pbmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDczMzYsImV4cCI6MjEwNDI4MzMzNn0.tDyOSumcS-4s5FqtVuAqf_o_BQtCyS_iW3oKpP8mP4U";
         
@@ -337,21 +338,22 @@
         }
 
         async function fetchRooms() {
-            const { data, error } = await supabase.from('rooms').select('*').order('bed_number', { ascending: true });
-            if (error) {
-                console.error("Fetch Error:", error);
-                document.getElementById("saveStatus").innerText = "🔴 Connection Error";
-                return;
-            }
+            try {
+                const { data, error } = await supabase.from('rooms').select('*').order('bed_number', { ascending: true });
+                if (error) {
+                    console.error("Fetch Error:", error);
+                    document.getElementById("saveStatus").innerText = "🔴 Connection Error: " + error.message;
+                    return;
+                }
 
-            if (!data || data.length === 0) {
-                await resetToDefaultData();
-            } else {
-                roomsData = data;
+                roomsData = data || [];
                 checkAutoCheckout();
                 filterData();
                 updateDashboard();
                 document.getElementById("saveStatus").innerText = "🟢 Supabase Live Active";
+            } catch (err) {
+                console.error("System Error:", err);
+                document.getElementById("saveStatus").innerText = "🔴 Cloud Disconnected";
             }
         }
 
@@ -567,17 +569,28 @@
             fetchRooms();
         }
 
+        // uuid Primary Key Structure သစ်အတွက် အဆင်ပြေအောင် ပြင်ဆင်ထားသော Reset Function
         async function resetToDefaultData() {
             if (confirm("အခန်း ၄၈၀ လုံး၏ Default Data များကို Supabase Database ထဲသို့ ထည့်သွင်းမှာ သေချာပါသလား?")) {
                 document.getElementById("saveStatus").innerText = "⏳ Loading 480 Beds...";
-                await supabase.from('rooms').delete().neq('bed_number', 'keep_structure');
+                
+                const { error: deleteError } = await supabase.from('rooms').delete().filter('bed_number', 'not.is', null);
+                
+                if (deleteError) {
+                    console.error("Delete Error:", deleteError);
+                    alert("Data ဖျက်ရာတွင် အမှားအယွင်းရှိပါသည်: " + deleteError.message);
+                    fetchRooms();
+                    return;
+                }
+
                 const defaultBeds = generateAllBeds();
                 
-                // Supabase Chunk Upload for speed and stability
+                // Chunk Upload (၁၀၀ ခုစီ ခွဲတင်ခြင်း)
                 for (let i = 0; i < defaultBeds.length; i += 100) {
                     const chunk = defaultBeds.slice(i, i + 100);
                     await supabase.from('rooms').insert(chunk);
                 }
+                
                 fetchRooms();
             }
         }
