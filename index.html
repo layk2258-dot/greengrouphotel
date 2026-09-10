@@ -302,20 +302,12 @@
 
     <script>
         // Supabase Credentials
+        // ⚠️ Base URL သာ ထည့်သွင်းရပါမည် (/rest/v1 မပါရပါ)
         const SUPABASE_URL = "https://tbgnybnvuotahclmingf.supabase.co";
-        const SUPABASE_ANON_KEY = "sb_publishable_zXBcJ-fbTi-74ElvOkmB7w_fX9QyUEX";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZ255Ym52dW90YWhjbG1pbmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDczMzYsImV4cCI6MjEwNDI4MzMzNn0.tDyOSumcS-4s5FqtVuAqf_o_BQtCyS_iW3oKpP8mP4U"; // သင့် Publishable Key ကို ပြန်ထည့်ပါ
         
-        // Window level Variable Conflict မဖြစ်စေရန် supabaseClient ဟု အမည်ပြောင်းလဲထားပါသည်
-        let supabaseClient;
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let roomsData = [];
-
-        function initSupabase() {
-            if (window.supabase && window.supabase.createClient) {
-                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            } else {
-                console.error("Supabase library is not loaded properly.");
-            }
-        }
 
         function generateAllBeds() {
             const prefixes = ["E3A", "E3B", "E4A", "E4B", "M3A", "M3B", "M4A", "M4B"];
@@ -347,8 +339,7 @@
         }
 
         async function fetchRooms() {
-            if (!supabaseClient) return;
-            const { data, error } = await supabaseClient.from('rooms').select('*').order('bed_number', { ascending: true });
+            const { data, error } = await supabase.from('rooms').select('*').order('bed_number', { ascending: true });
             if (error) {
                 console.error("Fetch Error:", error);
                 document.getElementById("saveStatus").innerText = "🔴 Cloud Disconnected";
@@ -368,22 +359,19 @@
 
         function initRealtimeSync() {
             fetchRooms();
-            if (supabaseClient) {
-                supabaseClient.channel('custom-all-channel')
-                    .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, payload => {
-                        fetchRooms();
-                    })
-                    .subscribe();
-            }
+            supabase.channel('custom-all-channel')
+                .on('postgres_changes', { event: '*', schema: 'public', table: 'rooms' }, payload => {
+                    fetchRooms();
+                })
+                .subscribe();
         }
 
         async function checkAutoCheckout() {
-            if (!supabaseClient) return;
             const todayStr = new Date().toISOString().split('T')[0];
             const expiredRooms = roomsData.filter(r => r.status === "In House" && r.check_out && r.check_out <= todayStr);
 
             for (const room of expiredRooms) {
-                await supabaseClient.from('rooms').update({ status: 'Check Out' }).eq('bed_number', room.bed_number);
+                await supabase.from('rooms').update({ status: 'Check Out' }).eq('bed_number', room.bed_number);
             }
         }
 
@@ -431,9 +419,7 @@
                 `;
                 tbody.appendChild(tr);
             });
-            if (window.lucide) {
-                lucide.createIcons();
-            }
+            lucide.createIcons();
         }
 
         function updateDashboard() {
@@ -472,8 +458,6 @@
 
         async function saveRoom(e) {
             e.preventDefault();
-            if (!supabaseClient) return;
-            
             const originalBedNo = document.getElementById("editBedNo").value;
             const bedNo = document.getElementById("formBedNo").value.trim();
             const isE = bedNo.startsWith("E");
@@ -493,9 +477,9 @@
             };
 
             if (originalBedNo) {
-                await supabaseClient.from('rooms').update(payload).eq('bed_number', originalBedNo);
+                await supabase.from('rooms').update(payload).eq('bed_number', originalBedNo);
             } else {
-                await supabaseClient.from('rooms').insert([payload]);
+                await supabase.from('rooms').insert([payload]);
             }
 
             closeModal();
@@ -520,9 +504,8 @@
         }
 
         async function deleteRoom(bedNo) {
-            if (!supabaseClient) return;
             if (confirm(`အခန်း/Bed No [ ${bedNo} ] ကို စနစ်ထဲမှ လုံးဝဖျက်ထုတ်ရန် သေချာပါသလား?`)) {
-                await supabaseClient.from('rooms').delete().eq('bed_number', bedNo);
+                await supabase.from('rooms').delete().eq('bed_number', bedNo);
                 fetchRooms();
             }
         }
@@ -552,7 +535,6 @@
         }
 
         async function confirmRoomMove() {
-            if (!supabaseClient) return;
             const sourceBedNo = document.getElementById("moveSourceBedNo").value;
             const targetBedNo = document.getElementById("targetBedSelect").value;
 
@@ -563,7 +545,7 @@
 
             const source = roomsData.find(r => r.bed_number === sourceBedNo);
 
-            await supabaseClient.from('rooms').update({
+            await supabase.from('rooms').update({
                 status: "In House",
                 guest_name: source.guest_name,
                 check_in: source.check_in,
@@ -573,7 +555,7 @@
                 remark: source.remark
             }).eq('bed_number', targetBedNo);
 
-            await supabaseClient.from('rooms').update({
+            await supabase.from('rooms').update({
                 status: "Available",
                 guest_name: "",
                 check_in: "",
@@ -588,11 +570,10 @@
         }
 
         async function resetToDefaultData() {
-            if (!supabaseClient) return;
             if (confirm("အခန်း ၄၈၀ လုံး၏ Data များကို မူလအတိုင်း ပြန်လည် Reset ပြုလုပ်မှာ သေချာပါသလား?")) {
-                await supabaseClient.from('rooms').delete().neq('bed_number', 'keep_table_structure');
+                await supabase.from('rooms').delete().neq('bed_number', 'keep_table_structure');
                 const defaultBeds = generateAllBeds();
-                await supabaseClient.from('rooms').insert(defaultBeds);
+                await supabase.from('rooms').insert(defaultBeds);
                 fetchRooms();
             }
         }
@@ -707,7 +688,6 @@
         }
 
         window.onload = () => {
-            initSupabase();
             initRealtimeSync();
             setInterval(checkAutoCheckout, 60000);
         };
