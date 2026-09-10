@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Green Group - Hotel Room Management System (Supabase)</title>
+    <title>Green Group - Hotel Room Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
     <!-- Supabase JS Client Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -32,10 +31,10 @@
             </div>
             <div class="flex items-center gap-2">
                 <span id="saveStatus" class="text-xs bg-emerald-700/60 text-emerald-100 px-2.5 py-1 rounded-md border border-emerald-600/50 flex items-center gap-1">
-                    🟢 Supabase Connected (Live)
+                    🟢 Supabase Connecting...
                 </span>
                 <button onclick="resetToDefaultData()" class="bg-rose-700 hover:bg-rose-600 text-white font-semibold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 shadow transition">
-                    🔄 Reset Default
+                    🔄 Reset Default (480 Beds)
                 </button>
 
                 <!-- Export Menu -->
@@ -302,8 +301,8 @@
 
     <script>
         // Supabase Credentials
-        const SUPABASE_URL = "sb_publishable_zXBcJ-fbTi-74ElvOkmB7w_fX9QyUEX";
-        const SUPABASE_ANON_KEY = "YOUR_SUeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZ255Ym52dW90YWhjbG1pbmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDczMzYsImV4cCI6MjEwNDI4MzMzNn0.tDyOSumcS-4s5FqtVuAqf_o_BQtCyS_iW3oKpP8mP4UPABASE_ANON_KEY";
+        const SUPABASE_URL = "https://tbgnybnvuotahelmingf.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRiZ255Ym52dW90YWhjbG1pbmdmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg3MDczMzYsImV4cCI6MjEwNDI4MzMzNn0.tDyOSumcS-4s5FqtVuAqf_o_BQtCyS_iW3oKpP8mP4U";
         
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         let roomsData = [];
@@ -341,7 +340,7 @@
             const { data, error } = await supabase.from('rooms').select('*').order('bed_number', { ascending: true });
             if (error) {
                 console.error("Fetch Error:", error);
-                document.getElementById("saveStatus").innerText = "🔴 Cloud Disconnected";
+                document.getElementById("saveStatus").innerText = "🔴 Connection Error";
                 return;
             }
 
@@ -569,10 +568,16 @@
         }
 
         async function resetToDefaultData() {
-            if (confirm("အခန်း ၄၈၀ လုံး၏ Data များကို မူလအတိုင်း ပြန်လည် Reset ပြုလုပ်မှာ သေချာပါသလား?")) {
-                await supabase.from('rooms').delete().neq('bed_number', 'keep_table_structure');
+            if (confirm("အခန်း ၄၈၀ လုံး၏ Default Data များကို Supabase Database ထဲသို့ ထည့်သွင်းမှာ သေချာပါသလား?")) {
+                document.getElementById("saveStatus").innerText = "⏳ Loading 480 Beds...";
+                await supabase.from('rooms').delete().neq('bed_number', 'keep_structure');
                 const defaultBeds = generateAllBeds();
-                await supabase.from('rooms').insert(defaultBeds);
+                
+                // Supabase Chunk Upload for speed and stability
+                for (let i = 0; i < defaultBeds.length; i += 100) {
+                    const chunk = defaultBeds.slice(i, i + 100);
+                    await supabase.from('rooms').insert(chunk);
+                }
                 fetchRooms();
             }
         }
